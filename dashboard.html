@@ -144,6 +144,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
   border-radius:16px;
   background:linear-gradient(180deg, rgba(18,20,26,0.4), rgba(18,20,26,0.12));
 }
+.aux-header {
+  padding:8px 14px 6px;
+  font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--dim); border-bottom:1px solid var(--brd);
+}
 .aux-copy {
   padding:14px;
   font-size:11px;
@@ -411,6 +416,34 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
   .side-panel { position:static; order:-1; }
   .aux-panel { display:none; }
 }
+
+/* COUNTDOWN BADGE */
+.countdown-badge {
+  font-family:'Space Mono',monospace; font-size:12px; font-weight:700;
+  color:var(--dim); min-width:28px; text-align:center;
+}
+
+/* SETTINGS PANEL */
+.settings-panel {
+  background:var(--surface); border-bottom:1px solid var(--brd);
+  padding:8px 20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+}
+.settings-group { display:flex; align-items:center; gap:7px; }
+.settings-label { font-size:10px; color:var(--dim); font-weight:700; text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; }
+.settings-btn {
+  padding:4px 10px; border-radius:6px; border:1px solid var(--brd);
+  background:transparent; color:var(--dim); font-size:11px; font-weight:700;
+  cursor:pointer; transition:all .15s;
+}
+.settings-btn:hover  { border-color:var(--acc-brd); color:var(--acc); }
+.settings-btn.active { background:var(--acc-bg); border-color:var(--acc-brd); color:var(--acc); }
+.gear-btn {
+  background:transparent; border:1px solid var(--brd); color:var(--dim);
+  width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px;
+  display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.gear-btn:hover  { border-color:var(--acc-brd); color:var(--acc); }
+.gear-btn.active { background:var(--acc-bg); border-color:var(--acc-brd); color:var(--acc); }
 </style>
 </head>
 <body>
@@ -428,6 +461,38 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
     <div class="conn-badge conn-off" id="connBadge"><div class="conn-dot"></div><span id="connText">Conectando...</span></div>
     <div class="sess-pill" id="sessPill">---</div>
     <div class="clock" id="clock">--:--:--</div>
+    <span class="countdown-badge" id="countdownBadge">--</span>
+    <button class="gear-btn" id="gearBtn" onclick="toggleSettings()" title="Configuración">⚙</button>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="settings-panel" id="settingsPanel" style="display:none">
+  <div class="settings-group">
+    <span class="settings-label">Refresco dashboard</span>
+    <button class="settings-btn" id="rBtn1"  onclick="setRefreshMs(1000)">1s</button>
+    <button class="settings-btn" id="rBtn3"  onclick="setRefreshMs(3000)">3s</button>
+    <button class="settings-btn active" id="rBtn5"  onclick="setRefreshMs(5000)">5s</button>
+    <button class="settings-btn" id="rBtn10" onclick="setRefreshMs(10000)">10s</button>
+    <button class="settings-btn" id="rBtn30" onclick="setRefreshMs(30000)">30s</button>
+  </div>
+  <div style="width:1px;height:20px;background:var(--brd)"></div>
+  <div class="settings-group">
+    <span class="settings-label">RSI timeframe</span>
+    <button class="settings-btn"        id="tfBtn1m"  onclick="setRsiTf('1m')">1m</button>
+    <button class="settings-btn"        id="tfBtn5m"  onclick="setRsiTf('5m')">5m</button>
+    <button class="settings-btn active" id="tfBtn15m" onclick="setRsiTf('15m')">15m</button>
+    <button class="settings-btn"        id="tfBtn1h"  onclick="setRsiTf('1h')">1h</button>
+    <button class="settings-btn"        id="tfBtn4h"  onclick="setRsiTf('4h')">4h</button>
+    <button class="settings-btn"        id="tfBtn1D"  onclick="setRsiTf('1D')">1D</button>
+  </div>
+  <div style="width:1px;height:20px;background:var(--brd)"></div>
+  <div class="settings-group">
+    <span class="settings-label">Analytics servidor</span>
+    <button class="settings-btn" id="aBtn1"  onclick="setAnalyticsInterval(1)">1s</button>
+    <button class="settings-btn active" id="aBtn3"  onclick="setAnalyticsInterval(3)">3s</button>
+    <button class="settings-btn" id="aBtn5"  onclick="setAnalyticsInterval(5)">5s</button>
+    <button class="settings-btn" id="aBtn10" onclick="setAnalyticsInterval(10)">10s</button>
   </div>
 </div>
 
@@ -488,11 +553,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
     </div>
   </aside>
   <aside class="aux-panel" aria-hidden="true">
+    <div class="aux-header" id="auxHeader">Historial · RSI (--) · MACD · VOL</div>
     <div class="aux-row" id="auxRow">
-      <div class="aux-line"><span class="aux-pill">1m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>
-      <div class="aux-line"><span class="aux-pill">5m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>
-      <div class="aux-line"><span class="aux-pill">15m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>
-      <div class="aux-line"><span class="aux-pill">4h</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>
+      <div class="aux-line"><span class="aux-pill" style="color:var(--dim)">--:--:--</span><span class="aux-pill" style="color:var(--dim)">RSI --</span><span class="aux-pill" style="color:var(--dim)">MACD --</span><span class="aux-pill" style="color:var(--dim)">VOL --</span></div>
     </div>
   </aside>
 </div>
@@ -508,14 +571,22 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 
 <script>
 const SERVER = 'http://127.0.0.1:8766';
-const FOCUSED_REFRESH_MS = 5000;
+let refreshMs   = 5000;
 let allPositions  = [];
 let currentTicker = '';
 let currentSig    = 'ALL';
 let alertsOpen    = true;
 let errorCount    = 0;
 let refreshTimer  = null;
+let progressTimer = null;
+let progressStart = Date.now();
+let rsiTf = '15m';
 const indicatorHistory = {};
+
+// FIX 8: sanitizar HTML para prevenir XSS
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // CLOCK
 function tick() {
@@ -529,6 +600,8 @@ setInterval(tick, 1000); tick();
 
 // FETCH
 async function fetchPositions() {
+  const updateEl = document.getElementById('sumUpdate');
+  if (updateEl) updateEl.style.opacity = '0.4';
   try {
     const res = await fetch(SERVER+'/positions?t='+Date.now(), {cache:'no-store'});
     if (!res.ok) throw new Error();
@@ -547,19 +620,80 @@ async function fetchPositions() {
     }
     renderAlerts();
     applyFilters();
+    startCountdown();
   } catch(e) {
     errorCount++;
     if (errorCount >= 2) setConnected(false, null);
+  } finally {
+    if (updateEl) updateEl.style.opacity = '1';
   }
 }
 
-function currentRefreshMs() {
-  return FOCUSED_REFRESH_MS;
+function startCountdown() {
+  progressStart = Date.now();
+  const badge = document.getElementById('countdownBadge');
+  if (!badge) return;
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    const ms = refreshMs - (Date.now() - progressStart);
+    badge.textContent = ms > 0 ? Math.ceil(ms / 1000) + 's' : '↻';
+  }, 250);
+}
+
+async function loadConfig() {
+  try {
+    const res = await fetch(SERVER + '/config', {cache: 'no-store'});
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (cfg.bar_size) {
+      const label = cfg.bar_size
+        .replace(/ mins?/, 'm').replace(/ hours?/, 'h').replace(/ day.*/, 'D');
+      rsiTf = label;
+    }
+  } catch(e) {}
+}
+
+function setRsiTf(tf) {
+  rsiTf = tf;
+  ['1m','5m','15m','1h','4h','1D'].forEach(v => {
+    const btn = document.getElementById('tfBtn' + v);
+    if (btn) btn.className = 'settings-btn' + (v === tf ? ' active' : '');
+  });
+  applyFilters();
+  fetchPositions();
 }
 
 function restartAutoRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(fetchPositions, currentRefreshMs());
+  refreshTimer = setInterval(fetchPositions, refreshMs);
+  startCountdown();
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  const btn   = document.getElementById('gearBtn');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'flex' : 'none';
+  btn.className = open ? 'gear-btn active' : 'gear-btn';
+}
+
+function setRefreshMs(ms) {
+  refreshMs = ms;
+  [1000, 3000, 5000, 10000, 30000].forEach(v => {
+    const btn = document.getElementById('rBtn' + (v/1000));
+    if (btn) btn.className = 'settings-btn' + (v === ms ? ' active' : '');
+  });
+  restartAutoRefresh();
+}
+
+async function setAnalyticsInterval(seconds) {
+  try {
+    await fetch(SERVER + '/config/analytics/' + seconds, {cache: 'no-store'});
+  } catch(e) {}
+  [1, 3, 5, 10].forEach(v => {
+    const btn = document.getElementById('aBtn' + v);
+    if (btn) btn.className = 'settings-btn' + (v === seconds ? ' active' : '');
+  });
 }
 
 function setConnected(on, session) {
@@ -589,16 +723,18 @@ function updateSummary(data) {
 
 // TICKER SELECT
 function updateTickerSelect() {
-  const sel = document.getElementById('tickerSelect');
-  const prev = currentTicker || sel.value;
-  const syms = allPositions.map(p => p.symbol).sort();
+  const sel    = document.getElementById('tickerSelect');
+  const prev   = currentTicker || sel.value;
+  const syms   = allPositions.map(p => p.symbol).sort();
+  const posMap = {};
+  allPositions.forEach(p => { posMap[p.symbol] = p; });
   sel.innerHTML = syms.map(s => {
-      const p    = allPositions.find(x => x.symbol===s);
-      const dec  = p ? p.decision : '';
-      const icon = dec==='BUY'?'🟢 ':dec==='SELL'?'🔴 ':(dec==='WATCH_BUY'||dec==='WATCH_SELL')?'🟡 ':'⚪ ';
-      const price = p ? ' — $'+p.price.toFixed(2) : '';
-      return `<option value="${s}">${icon}${s}${price}</option>`;
-    }).join('');
+    const p     = posMap[s];
+    const dec   = p ? p.decision : '';
+    const icon  = dec==='BUY'?'🟢 ':dec==='SELL'?'🔴 ':(dec==='WATCH_BUY'||dec==='WATCH_SELL')?'🟡 ':'⚪ ';
+    const price = p ? ' — $'+p.price.toFixed(2) : '';
+    return `<option value="${esc(s)}">${icon}${esc(s)}${price}</option>`;
+  }).join('');
   if ([...sel.options].some(o => o.value===prev)) {
     sel.value = prev;
   } else if (syms.length > 0) {
@@ -635,7 +771,6 @@ function setSigFilter(f) {
 
 // APPLY FILTERS
 function applyFilters() {
-  currentTicker = document.getElementById('tickerSelect').value;
   let filtered = allPositions;
 
   if (currentTicker) {
@@ -655,11 +790,23 @@ function applyFilters() {
 }
 
 function getRsiModel(position) {
+  const tfData = (position.multi_tf || {})[rsiTf];
+  if (tfData && tfData.rsi != null) {
+    return { value: Number(tfData.rsi), rising: false, falling: false };
+  }
   return position.rsi_data || {
     value: Number(position.rsi || 50),
     rising: !!position.rsi_rising,
     falling: !!position.rsi_falling,
   };
+}
+
+function getMacdModel(position) {
+  const tfData = (position.multi_tf || {})[rsiTf];
+  if (tfData && tfData.macd != null) {
+    return tfData.macd;
+  }
+  return position.macd || {};
 }
 
 function getCandleModel(position) {
@@ -679,11 +826,11 @@ function captureIndicatorHistory(positions) {
     const sym = position.symbol;
     if (!sym) return;
     const history = indicatorHistory[sym] || [];
-    const macd = position.macd || {};
+    const macd = getMacdModel(position);
     const volLabel = position.vol_label || (Number(position.volume_ratio || 0) >= 1.0 ? 'con volumen' : 'sin volumen');
     const entry = {
       t: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}),
-      rsi: Number((position.rsi_data && position.rsi_data.value) || position.rsi || 0),
+      rsi: Number(getRsiModel(position).value || 0),
       macd: macd.cross_up ? 'Cruce up' : macd.cross_down ? 'Cruce down' : macd.bullish ? 'Alcista' : 'Bajista',
       vol: volLabel,
     };
@@ -740,8 +887,8 @@ function renderAlerts() {
     const pnlColor     = p.pnl_total>=0?'var(--green)':'var(--red)';
     const pnlTxt      = (p.pnl_total>=0?'+':'')+'$'+p.pnl_total.toFixed(2);
     const rsiAlertColor = p.rsi>=70?'var(--red)':p.rsi<=30?'var(--green)':p.rsi>=55?'var(--yellow)':p.rsi<=45?'var(--blue)':'var(--dim)';
-    return `<div class="alert-row ${cls}" onclick="jumpToTicker('${p.symbol}')">
-      <span class="alert-sym" style="color:${col}">${p.symbol}</span>
+    return `<div class="alert-row ${cls}" onclick="jumpToTicker('${esc(p.symbol)}')">
+      <span class="alert-sym" style="color:${col}">${esc(p.symbol)}</span>
       <span class="alert-dec" style="color:${col}">${icon}</span>
       <span class="alert-price">$${p.price.toFixed(2)}</span>
       <span class="alert-sigs" style="margin:0 8px">${dots}</span>
@@ -793,7 +940,7 @@ function renderCard(p) {
   const candleModel = getCandleModel(p);
   const dec  = p.decision || 'WAIT';
   const rsi  = Number(rsiModel.value || 50);
-  const macd = p.macd || {};
+  const macd = getMacdModel(p);
   const sig  = p.signals || {};
 
   const cardCls = dec==='BUY'?'buy':dec==='SELL'?'sell':(dec==='WATCH_BUY'||dec==='WATCH_SELL')?'watch':'';
@@ -835,10 +982,10 @@ function renderCard(p) {
   const volumeBadgeBorder = volumeRatio >= 1.5 ? 'var(--green-brd)' : volumeRatio >= 1 ? 'var(--yellow-brd)' : 'var(--brd)';
   const volLabel = p.vol_label || (volumeRatio >= 1.0 ? 'con volumen' : 'sin volumen');
   return `
-  <div class="card ${cardCls}" id="card-${p.symbol}">
+  <div class="card ${cardCls}" id="card-${esc(p.symbol)}">
     <div class="card-head">
       <div>
-        <div class="card-sym">${p.symbol}</div>
+        <div class="card-sym">${esc(p.symbol)}</div>
         <div style="font-size:10px;color:var(--dim);margin-top:2px;">${p.qty} acciones · costo $${p.avg_cost.toFixed(2)}</div>
       </div>
       <div style="text-align:right;">
@@ -858,7 +1005,7 @@ function renderCard(p) {
       <div style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <div style="display:flex;align-items:baseline;gap:6px;">
-            <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;">RSI actual</span>
+            <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;">RSI (${rsiTf})</span>
             <span style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${rsiColor}">${rsi.toFixed(1)}</span>
             <span style="font-size:14px;color:${rsiColor}">${rsiDir}</span>
           </div>
@@ -877,7 +1024,7 @@ function renderCard(p) {
       <!-- MACD DETALLE -->
       <div style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
-          <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;">MACD 12 · 26 · 9</span>
+          <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;">MACD (${rsiTf}) · 12 · 26 · 9</span>
           <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${macd.cross_up?'var(--green-bg)':macd.cross_down?'var(--red-bg)':macd.bullish?'var(--green-bg)':'var(--red-bg)'};color:${macd.bullish?'var(--green)':'var(--red)'};border:1px solid ${macd.bullish?'var(--green-brd)':'var(--red-brd)'};">${macd.cross_up?'⬆ CRUCE ALCISTA':macd.cross_down?'⬇ CRUCE BAJISTA':macd.bullish?'▲ Alcista':'▼ Bajista'}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px;">
@@ -963,6 +1110,9 @@ function renderTeleprompt(position) {
   const qtyEl = document.getElementById('sideQty');
   const bodyEl = document.getElementById('sideBody');
   const auxRow = document.getElementById('auxRow');
+  const auxHeader = document.getElementById('auxHeader');
+
+  if (auxHeader) auxHeader.textContent = `Historial · RSI (${rsiTf}) · MACD · VOL`;
 
   if (!position) {
     symbolEl.textContent = '---';
@@ -973,33 +1123,33 @@ function renderTeleprompt(position) {
     priceEl.textContent = '---';
     qtyEl.textContent = '---';
     bodyEl.innerHTML = '<div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>';
-    auxRow.innerHTML = '<div class="aux-line"><span class="aux-pill">1m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div><div class="aux-line"><span class="aux-pill">5m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div><div class="aux-line"><span class="aux-pill">15m</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div><div class="aux-line"><span class="aux-pill">4h</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>';
+    auxRow.innerHTML = '<div class="aux-line"><span class="aux-pill" style="color:var(--dim)">--:--:--</span><span class="aux-pill" style="color:var(--dim)">RSI --</span><span class="aux-pill" style="color:var(--dim)">MACD --</span><span class="aux-pill" style="color:var(--dim)">VOL --</span></div>';
     return;
   }
 
   const rsiModel = getRsiModel(position);
   const candleModel = getCandleModel(position);
   const rsi = Number(rsiModel.value || 0);
-  const macd = position.macd || {};
+  const macd = getMacdModel(position);
   const volumeRatio = Number(position.volume_ratio || 0);
   const volLabel = position.vol_label || (volumeRatio >= 1.0 ? 'con volumen' : 'sin volumen');
   const decision = position.decision || 'WAIT';
   const price = Number(position.price || 0);
 
-  const rsiTone = rsi < 30 ? ['var(--green)', 'RSI 5m en sobreventa', 'Lectura principal en 5m. RSI bajo favorece rebote si confirma precio.']
-    : rsi > 70 ? ['var(--red)', 'RSI 5m en sobrecompra', 'Lectura principal en 5m. RSI alto sugiere agotamiento si pierde impulso.']
-    : rsi >= 55 ? ['var(--yellow)', 'RSI 5m en zona alta', 'Lectura principal en 5m. Momentum positivo, pero no extremo.']
-    : rsi <= 45 ? ['var(--blue)', 'RSI 5m en zona baja', 'Lectura principal en 5m. Momentum débil, todavía sin extremo.']
-    : ['var(--dim)', 'RSI 5m neutral', 'Lectura principal en 5m. Sin ventaja clara desde RSI.'];
+  const rsiTone = rsi < 30 ? ['var(--green)', `RSI ${rsiTf} en sobreventa`, `Lectura en ${rsiTf}. RSI bajo favorece rebote si confirma precio.`]
+    : rsi > 70 ? ['var(--red)', `RSI ${rsiTf} en sobrecompra`, `Lectura en ${rsiTf}. RSI alto sugiere agotamiento si pierde impulso.`]
+    : rsi >= 55 ? ['var(--yellow)', `RSI ${rsiTf} en zona alta`, `Lectura en ${rsiTf}. Momentum positivo, pero no extremo.`]
+    : rsi <= 45 ? ['var(--blue)', `RSI ${rsiTf} en zona baja`, `Lectura en ${rsiTf}. Momentum débil, todavía sin extremo.`]
+    : ['var(--dim)', `RSI ${rsiTf} neutral`, `Lectura en ${rsiTf}. Sin ventaja clara desde RSI.`];
 
-  const macdTone = macd.cross_up ? ['var(--green)', 'MACD 5m con cruce alcista', 'Lectura principal en 5m. La línea MACD acaba de superar la señal.']
-    : macd.cross_down ? ['var(--red)', 'MACD 5m con cruce bajista', 'Lectura principal en 5m. La línea MACD perdió la señal.']
-    : macd.bullish ? ['var(--green)', 'MACD 5m sigue alcista', `Lectura principal en 5m. Histograma ${((macd.hist||0) >= 0 ? '+' : '')}${(macd.hist||0).toFixed(3)}.`]
-    : ['var(--red)', 'MACD 5m sigue bajista', `Lectura principal en 5m. Histograma ${((macd.hist||0) >= 0 ? '+' : '')}${(macd.hist||0).toFixed(3)}.`];
+  const macdTone = macd.cross_up ? ['var(--green)', `MACD ${rsiTf} con cruce alcista`, `Lectura en ${rsiTf}. La línea MACD acaba de superar la señal.`]
+    : macd.cross_down ? ['var(--red)', `MACD ${rsiTf} con cruce bajista`, `Lectura en ${rsiTf}. La línea MACD perdió la señal.`]
+    : macd.bullish ? ['var(--green)', `MACD ${rsiTf} sigue alcista`, `Lectura en ${rsiTf}. Histograma ${((macd.hist||0) >= 0 ? '+' : '')}${(macd.hist||0).toFixed(3)}.`]
+    : ['var(--red)', `MACD ${rsiTf} sigue bajista`, `Lectura en ${rsiTf}. Histograma ${((macd.hist||0) >= 0 ? '+' : '')}${(macd.hist||0).toFixed(3)}.`];
 
-  const volTone = volumeRatio >= 1.5 ? ['var(--green)', 'Volumen 5m alto', `Lectura principal en 5m. Opera con ${volumeRatio.toFixed(2)}x del promedio reciente.`]
-    : volumeRatio >= 1.0 ? ['var(--yellow)', 'Volumen 5m aceptable', `Lectura principal en 5m. Filtro positivo: ${volLabel} con ${volumeRatio.toFixed(2)}x.`]
-    : ['var(--dim)', 'Volumen 5m flojo', `Lectura principal en 5m. Filtro débil: ${volLabel} con ${volumeRatio.toFixed(2)}x.`];
+  const volTone = volumeRatio >= 1.5 ? ['var(--green)', `Volumen ${rsiTf} alto`, `Lectura en ${rsiTf}. Opera con ${volumeRatio.toFixed(2)}x del promedio reciente.`]
+    : volumeRatio >= 1.0 ? ['var(--yellow)', `Volumen ${rsiTf} aceptable`, `Lectura en ${rsiTf}. Filtro positivo: ${volLabel} con ${volumeRatio.toFixed(2)}x.`]
+    : ['var(--dim)', `Volumen ${rsiTf} flojo`, `Lectura en ${rsiTf}. Filtro débil: ${volLabel} con ${volumeRatio.toFixed(2)}x.`];
 
   const decisionTone = decision === 'BUY' ? ['var(--green)', 'Señal de compra', `Precio ${price.toFixed(2)} con confirmaciones activas.`]
     : decision === 'SELL' ? ['var(--red)', 'Señal de venta', `Precio ${price.toFixed(2)} con sesgo bajista.`]
@@ -1015,7 +1165,8 @@ function renderTeleprompt(position) {
 
   const rows = [rsiTone, macdTone, candleTone, volTone, decisionTone];
   const multiTf = position.multi_tf || {};
-  const tfOrder = ['1m', '5m', '15m', '4h'];
+  const tfOrder = ['1m', '5m', '15m', '1h', '4h', '1D'];
+  const tfPeriod = {'1m':'1 día','5m':'2 días','15m':'5 días','1h':'10 días','4h':'3 meses','1D':'1 año'};
   const tfRows = tfOrder
     .filter(tf => getTfModel(position, tf))
     .map(tf => {
@@ -1029,10 +1180,10 @@ function renderTeleprompt(position) {
         : 'Bajista';
       return `
         <div class="tf-row">
-          <div class="tf-label">${tf}</div>
+          <div class="tf-label">${tf}<div style="font-size:8px;color:var(--dim);font-weight:400;margin-top:2px;">${tfPeriod[tf]||''}</div></div>
           <div>
             <div class="tf-main">${item.summary}</div>
-            <div class="tf-mini">Cierre ${Number(item.close||0).toFixed(2)}</div>
+            <div class="tf-mini">Último cierre: ${Number(item.close||0).toFixed(2)}</div>
             <div class="tf-values">
               <span>RSI ${Number(item.rsi||0).toFixed(1)}</span>
               <span>MACD ${macdState}</span>
@@ -1095,6 +1246,7 @@ function renderTeleprompt(position) {
 }
 
 // INIT
+loadConfig();
 fetchPositions();
 restartAutoRefresh();
 </script>
