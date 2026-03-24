@@ -1001,6 +1001,16 @@ function renderCard(p) {
         <div class="sig-pill ${candleModel.red_consecutive>=2?'sig-on':'sig-off'}">${candleModel.red_consecutive} velas rojas</div>
         <div class="sig-pill ${volLabel==='con volumen'?'sig-on':'sig-off'}">${volLabel}</div>
       </div>
+      <!-- SPIKE 15M -->
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;">Spike 15m</span>
+        ${(()=>{ const sp = p.spike||{}; const pr = sp.price||{}; const vo = sp.volume||{};
+          const dirIcon = pr.direction==='UP'?' ↑':pr.direction==='DOWN'?' ↓':'';
+          const pCls = pr.detected?'sig-on':'sig-off';
+          const vCls = vo.detected?'sig-on':'sig-off';
+          return `<div class="sig-pill ${pCls}">${pr.detected?'✓':'○'} Precio${pr.detected?' ×'+pr.ratio+dirIcon:''}</div>`+
+                 `<div class="sig-pill ${vCls}">${vo.detected?'✓':'○'} Vol${vo.detected?' ×'+vo.ratio:''}</div>`;
+        })()}</div>
       <!-- RSI GAUGE -->
       <div style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">

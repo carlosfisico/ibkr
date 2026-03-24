@@ -149,6 +149,8 @@ def build_position_entry(symbol, qty, avg_cost, contract):
         'tp1_suggested':  0.0,
         'sl_price':       0.0,
         'tp1_price':      0.0,
+        'spike':          {'price':  {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'},
+                           'volume': {'detected': False, 'ratio': 0.0}},
         'decision':       'WAIT',
         'trade_style':    'WAIT',
         'trade_note':     'Sin ventaja clara entre scalp y swing.',
@@ -585,11 +587,20 @@ def refresh_multi_tf_analysis(sym, contract):
 
     style = ind.choose_trade_style(multi_tf)
 
+    # Spike detection usa siempre las barras de 15m
+    tf_15m_idx = list(MULTI_TF_CONFIG.keys()).index('15m')
+    bars_15m   = results[tf_15m_idx] if not isinstance(results[tf_15m_idx], Exception) else []
+    spike = {
+        'price':  ind.detect_price_spike(bars_15m)  if bars_15m else {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'},
+        'volume': ind.detect_volume_spike(bars_15m) if bars_15m else {'detected': False, 'ratio': 0.0},
+    }
+
     with state_lock:
         current = state['positions'].get(sym)
         if not current:
             return
         current['multi_tf']       = multi_tf
+        current['spike']          = spike
         current['trade_style']    = style['trade_style']
         current['trade_note']     = style['trade_note']
         current['structure_note'] = style['structure_note']

@@ -96,6 +96,36 @@ def calc_atr(bars, period=14):
     return round(sum(trs[-period:]) / min(len(trs), period), 4)
 
 
+def detect_price_spike(bars, multiplier=2.0, period=20):
+    """Detecta si la última vela de 15m tiene un cuerpo inusualmente grande."""
+    if len(bars) < 3:
+        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'}
+    bodies   = [abs(bar.close - bar.open) for bar in bars]
+    current  = bodies[-1]
+    baseline = bodies[-(period + 1):-1]
+    avg      = sum(baseline) / len(baseline) if baseline else 0
+    if avg == 0 or current == 0:
+        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'}
+    ratio    = current / avg
+    detected = ratio >= multiplier
+    direction = ('UP' if bars[-1].close > bars[-1].open else 'DOWN') if detected else 'NEUTRAL'
+    return {'detected': detected, 'ratio': round(ratio, 2), 'direction': direction}
+
+
+def detect_volume_spike(bars, multiplier=2.5, period=20):
+    """Detecta si el volumen de la última vela explota respecto al promedio reciente."""
+    if len(bars) < 3:
+        return {'detected': False, 'ratio': 0.0}
+    volumes  = [int(getattr(bar, 'volume', 0) or 0) for bar in bars]
+    current  = volumes[-1]
+    baseline = volumes[-(period + 1):-1]
+    avg      = sum(baseline) / len(baseline) if baseline else 0
+    if avg == 0:
+        return {'detected': False, 'ratio': 0.0}
+    ratio = current / avg
+    return {'detected': ratio >= multiplier, 'ratio': round(ratio, 2)}
+
+
 def calc_volume_metrics(bars, period=20):
     if not bars:
         return {'volume': 0, 'avg_volume': 0, 'volume_ratio': 0.0, 'volume_signal': 'LOW'}
