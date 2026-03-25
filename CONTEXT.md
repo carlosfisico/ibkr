@@ -45,7 +45,7 @@ HTTP server + threads de fondo + main entry point.
 
 ### `dashboard.html`
 Frontend completo en un solo archivo.
-- **Layout 4 columnas**: cards (izq) | grid-a (análisis/teleprompt) | grid-b (multi-TF) | aux-panel (historial, 360px)
+- **Layout 4 columnas**: cards (izq) | grid-a (análisis/teleprompt) | grid-b (contexto multi-TF) | aux-panel (historial, 360px)
   - `grid-template-columns: minmax(340px, 1.6fr) 260px 260px 360px`
 - **Privacy toggle** (ojito 👁 en header): `body.privacy-mode .sensitive { visibility:hidden }` — oculta qty, avg cost, P&L no realizado, # posiciones, P&L total
 - **Semáforo (traffic light)**: en cada card, lógica jerárquica (no scoring plano):
@@ -54,6 +54,9 @@ Frontend completo en un solo archivo.
   - Verde: todos los filtros pasan
   - Config en objeto `TL` (RSI_LONG_MIN/MAX, VOL_HIGH, CANDLE_TRIGGER, etc.)
   - Estado ORTH: label `'ORTH'`, texto `'Outside regular trading hours'`
+- **grid-b — CONTEXTO**: kicker "CONTEXTO" (recordatorio visual de que es solo contexto, no señal operativa)
+  - Resumen de alineación arriba del stack: `↑ ALCISTA 4/6` (verde) / `↓ BAJISTA 4/6` (rojo) / `MIXTO 3-3` (amarillo)
+  - Conteo sobre TFs disponibles con datos; no aparece si no hay lectura
 - **TF selector para RSI/MACD**: botones 1m/5m/15m/1h/4h/1D en settings (default: 15m)
 - **Spike 15m** en cada card:
   - Label "Spike 15m" en amarillo bold 13px

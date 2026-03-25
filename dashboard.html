@@ -1664,12 +1664,29 @@ function renderTeleprompt(position) {
     <div class="side-body">${tlPanelHtml}${teleRowsHTML}</div>
   `;
 
+  const tfAvail    = tfOrder.filter(tf => getTfModel(position, tf));
+  const bullCount  = tfAvail.filter(tf => getTfModel(position, tf).bias === 'BULLISH').length;
+  const bearCount  = tfAvail.filter(tf => getTfModel(position, tf).bias === 'BEARISH').length;
+  const tfTotal    = tfAvail.length;
+  const alignLabel = bullCount > bearCount ? `↑ ALCISTA ${bullCount}/${tfTotal}`
+                   : bearCount > bullCount ? `↓ BAJISTA ${bearCount}/${tfTotal}`
+                   : tfTotal > 0           ? `MIXTO ${bullCount}-${bearCount}`
+                   : null;
+  const alignColor = bullCount > bearCount ? 'var(--green)'
+                   : bearCount > bullCount ? 'var(--red)'
+                   : 'var(--yellow)';
+  const alignHTML = alignLabel ? `
+    <div style="font-size:12px;font-weight:800;color:${alignColor};letter-spacing:.06em;padding:6px 0 2px;">
+      ${alignLabel}
+    </div>` : '';
+
   gridB.innerHTML = `
     <div class="side-head">
-      <div class="side-kicker">Multi-Timeframe</div>
+      <div class="side-kicker">CONTEXTO</div>
       <div class="side-symbol">${esc(position.symbol || '---')}</div>
     </div>
     <div class="side-body">
+      ${alignHTML}
       <div class="tf-stack">${tfRows || '<div class="side-empty">Sin lectura multi-timeframe todavía.</div>'}</div>
     </div>
   `;
