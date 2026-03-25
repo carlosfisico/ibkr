@@ -638,6 +638,7 @@ let rsiTf = '15m';
 const indicatorHistory = {};
 const lastSpikeTime     = {}; // { symbol: timestamp } — momento del inicio del spike actual
 const prevSpikeState    = {}; // { symbol: bool } — estado anterior para detectar transición false→true
+const prevBothSpike     = {}; // { symbol: bool } — spike precio+volumen simultáneo previo
 
 // ─────────────────────────────────────────────────────────────
 // SEMÁFORO OPERATIVO — Lógica jerárquica, NO score plano
@@ -1367,6 +1368,9 @@ function renderCard(p) {
         // Fallback: si hay spike activo ahora y aún no tenemos timestamp, usar Date.now()
         if (anySpike && !lastSpikeTime[p.symbol]) lastSpikeTime[p.symbol] = Date.now();
         prevSpikeState[p.symbol] = anySpike;
+        const bothSpike = pr.detected && vo.detected;
+        if (bothSpike && !prevBothSpike[p.symbol]) playDoubleSpike();
+        prevBothSpike[p.symbol] = bothSpike;
         const dirIcon = pr.direction==='UP'?' ↑':pr.direction==='DOWN'?' ↓':'';
         const pCls = pr.detected?'sig-on':'sig-off';
         const vCls = vo.detected?'sig-on':'sig-off';
@@ -1473,6 +1477,24 @@ function renderCard(p) {
       </div>
     </div>
   </div>`;
+}
+
+function playDoubleSpike() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Dos pitidos cortos ascendentes
+    [[440, 0.00, 0.12], [660, 0.15, 0.12]].forEach(([freq, start, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.01);
+    });
+  } catch (e) { /* navegador sin AudioContext */ }
 }
 
 function formatElapsed(ms) {

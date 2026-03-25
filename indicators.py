@@ -97,10 +97,10 @@ def calc_atr(bars, period=14):
 
 
 def detect_price_spike(bars, multiplier=2.0, period=20):
-    """Detecta si la última vela de 15m tiene un cuerpo inusualmente grande."""
+    """Detecta si la última vela de 15m tiene un rango (high-low) inusualmente grande."""
     if len(bars) < 3:
         return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'}
-    bodies   = [abs(bar.close - bar.open) for bar in bars]
+    bodies   = [bar.high - bar.low for bar in bars]
     current  = bodies[-1]
     baseline = bodies[-(period + 1):-1]
     avg      = sum(baseline) / len(baseline) if baseline else 0
@@ -129,23 +129,33 @@ def detect_volume_spike(bars, multiplier=2.5, period=20):
 def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
     """Escanea barras históricas y devuelve el timestamp Unix del último spike de precio y volumen.
 
-    Recorre las barras de más reciente a más antigua y detiene la búsqueda en cuanto
-    encuentra cada tipo de spike. Devuelve None si no hubo spike en las barras disponibles.
+    Solo reporta spikes ocurridos hoy (horario NY). El baseline usa todas las barras
+    disponibles para que el promedio sea válido aunque el spike sea la primera barra del día.
     """
     if len(bars) < period + 1:
         return {'last_price_ts': None, 'last_vol_ts': None}
 
-    bodies  = [abs(bar.close - bar.open) for bar in bars]
+    ny       = pytz.timezone('America/New_York')
+    today_ny = datetime.now(ny).date()
+
+    bodies  = [bar.high - bar.low for bar in bars]
     volumes = [int(getattr(bar, 'volume', 0) or 0) for bar in bars]
 
     last_price_ts = None
     last_vol_ts   = None
 
     for i in range(len(bars) - 1, 0, -1):
+        bar_date = getattr(bars[i], 'date', None)
+        if bar_date is None:
+            continue
+        ts = bar_date.timestamp() if hasattr(bar_date, 'timestamp') else float(bar_date)
+        # Solo spikes de hoy; al llegar a ayer cortamos
+        if datetime.fromtimestamp(ts, tz=ny).date() < today_ny:
+            break
+
         baseline_start = max(0, i - period)
-        baseline_end   = i  # exclude current bar i
-        baseline_b     = bodies[baseline_start:baseline_end]
-        baseline_v     = volumes[baseline_start:baseline_end]
+        baseline_b     = bodies[baseline_start:i]
+        baseline_v     = volumes[baseline_start:i]
         if not baseline_b:
             continue
 
@@ -153,16 +163,10 @@ def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
         avg_v = sum(baseline_v) / len(baseline_v) if baseline_v else 0
 
         if last_price_ts is None and avg_b > 0 and bodies[i] / avg_b >= multiplier_price:
-            bar_date = getattr(bars[i], 'date', None)
-            if bar_date is not None:
-                ts = bar_date.timestamp() if hasattr(bar_date, 'timestamp') else float(bar_date)
-                last_price_ts = ts
+            last_price_ts = ts
 
         if last_vol_ts is None and avg_v > 0 and volumes[i] / avg_v >= multiplier_vol:
-            bar_date = getattr(bars[i], 'date', None)
-            if bar_date is not None:
-                ts = bar_date.timestamp() if hasattr(bar_date, 'timestamp') else float(bar_date)
-                last_vol_ts = ts
+            last_vol_ts = ts
 
         if last_price_ts is not None and last_vol_ts is not None:
             break

@@ -21,9 +21,9 @@ y se abre `dashboard.html` en el navegador apuntando a `http://localhost:8766`.
 ### `indicators.py`
 Funciones puras de cálculo, sin estado, sin imports de IBKR.
 - `calc_rsi`, `calc_macd` (O(n) con `_ema_series`), `calc_atr`, `calc_volume_metrics`
-- `detect_price_spike(bars, multiplier=2.0, period=20)` — cuerpo de vela vs promedio últimas 20
+- `detect_price_spike(bars, multiplier=2.0, period=20)` — rango de vela (`high-low`) vs promedio últimas 20 (captura mechas, no solo cuerpo)
 - `detect_volume_spike(bars, multiplier=2.5, period=20)` — volumen vs promedio últimas 20
-- `last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20)` — escanea barras históricas hacia atrás y devuelve `{'last_price_ts': float|None, 'last_vol_ts': float|None}` en Unix seconds
+- `last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20)` — escanea barras de **hoy (NY)** hacia atrás; devuelve `{'last_price_ts': float|None, 'last_vol_ts': float|None}` en Unix seconds. El baseline usa todos los días disponibles para que el promedio sea válido.
 - `signal_decision`, `timeframe_bias`, `choose_trade_style`, `session_name` (DST-aware con pytz)
 
 ### `ibkr_client.py`
@@ -57,9 +57,10 @@ Frontend completo en un solo archivo.
 - **TF selector para RSI/MACD**: botones 1m/5m/15m/1h/4h/1D en settings (default: 15m)
 - **Spike 15m** en cada card:
   - Label "Spike 15m" en amarillo bold 13px
-  - Cronómetro `"hace Xm Ys"` que persiste entre recargas usando `p.spike.last_price_ts` / `last_vol_ts` del servidor
+  - Cronómetro `"hace Xm Ys"` que persiste entre recargas usando `p.spike.last_price_ts` / `last_vol_ts` del servidor (solo spikes de hoy; muestra `--` si no hubo ninguno en la sesión)
   - `lastSpikeTime[sym]` se inicializa desde el servidor (timestamp más reciente de precio o volumen); fallback a `Date.now()` si hay spike activo sin timestamp
   - `setInterval` de 1s actualiza el DOM del timer sin re-renderizar la card
+  - **Alerta sonora**: dos pitidos ascendentes (440Hz→660Hz, Web Audio API) cuando `precio.detected && volumen.detected` pasa de `false` a `true`. Solo suena en la transición, no en cada refresh. `prevBothSpike[sym]` trackea el estado anterior.
 - **Countdown badge**: texto "5s", "4s"... en header
 - **Settings panel**: refresco dashboard (1s/3s/5s/10s/30s), RSI TF, analytics servidor (1s/3s/5s/10s)
 - `esc()` helper anti-XSS en todos los strings del usuario
@@ -69,10 +70,8 @@ Frontend completo en un solo archivo.
 ## Lo que sigue (pendiente)
 
 ### Spike — mejoras
-- [ ] Afinar umbrales: `multiplier` de precio (2.0) y volumen (2.5) — verificar con datos reales
-- [ ] Considerar usar rango de vela (`high - low`) además del cuerpo (`|close - open|`) para capturar mechas largas
+- [ ] Afinar umbrales: `multiplier` de precio (2.0) y volumen (2.5) — verificar con datos reales en sesión activa
 - [ ] En panel central (grid-a/teleprompt), agregar fila "Spike 15m" con descripción textual
-- [ ] El cronómetro busca en los últimos 5 días — considerar filtrar solo barras de hoy si se prefiere
 
 ### Mejoras de UX pendientes
 - [ ] Al seleccionar un ticker, hacer scroll automático a su card
@@ -80,7 +79,6 @@ Frontend completo en un solo archivo.
 - [ ] En el panel derecho (historial), mostrar el TF de cada entrada guardada (por si el usuario cambia TF a la mitad)
 
 ### Posibles features
-- [ ] Alertas sonoras cuando se detecta spike de precio + volumen simultáneo
 - [ ] Exportar historial de señales a CSV
 - [ ] Modo "solo señales" que filtre y muestre únicamente posiciones con BUY/SELL activo
 
