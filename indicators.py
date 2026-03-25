@@ -126,6 +126,50 @@ def detect_volume_spike(bars, multiplier=2.5, period=20):
     return {'detected': ratio >= multiplier, 'ratio': round(ratio, 2)}
 
 
+def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
+    """Escanea barras históricas y devuelve el timestamp Unix del último spike de precio y volumen.
+
+    Recorre las barras de más reciente a más antigua y detiene la búsqueda en cuanto
+    encuentra cada tipo de spike. Devuelve None si no hubo spike en las barras disponibles.
+    """
+    if len(bars) < period + 1:
+        return {'last_price_ts': None, 'last_vol_ts': None}
+
+    bodies  = [abs(bar.close - bar.open) for bar in bars]
+    volumes = [int(getattr(bar, 'volume', 0) or 0) for bar in bars]
+
+    last_price_ts = None
+    last_vol_ts   = None
+
+    for i in range(len(bars) - 1, 0, -1):
+        baseline_start = max(0, i - period)
+        baseline_end   = i  # exclude current bar i
+        baseline_b     = bodies[baseline_start:baseline_end]
+        baseline_v     = volumes[baseline_start:baseline_end]
+        if not baseline_b:
+            continue
+
+        avg_b = sum(baseline_b) / len(baseline_b)
+        avg_v = sum(baseline_v) / len(baseline_v) if baseline_v else 0
+
+        if last_price_ts is None and avg_b > 0 and bodies[i] / avg_b >= multiplier_price:
+            bar_date = getattr(bars[i], 'date', None)
+            if bar_date is not None:
+                ts = bar_date.timestamp() if hasattr(bar_date, 'timestamp') else float(bar_date)
+                last_price_ts = ts
+
+        if last_vol_ts is None and avg_v > 0 and volumes[i] / avg_v >= multiplier_vol:
+            bar_date = getattr(bars[i], 'date', None)
+            if bar_date is not None:
+                ts = bar_date.timestamp() if hasattr(bar_date, 'timestamp') else float(bar_date)
+                last_vol_ts = ts
+
+        if last_price_ts is not None and last_vol_ts is not None:
+            break
+
+    return {'last_price_ts': last_price_ts, 'last_vol_ts': last_vol_ts}
+
+
 def calc_volume_metrics(bars, period=20):
     if not bars:
         return {'volume': 0, 'avg_volume': 0, 'volume_ratio': 0.0, 'volume_signal': 'LOW'}

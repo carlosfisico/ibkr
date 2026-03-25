@@ -590,9 +590,12 @@ def refresh_multi_tf_analysis(sym, contract):
     # Spike detection usa siempre las barras de 15m
     tf_15m_idx = list(MULTI_TF_CONFIG.keys()).index('15m')
     bars_15m   = results[tf_15m_idx] if not isinstance(results[tf_15m_idx], Exception) else []
+    spike_times = ind.last_spike_times(bars_15m) if bars_15m else {'last_price_ts': None, 'last_vol_ts': None}
     spike = {
-        'price':  ind.detect_price_spike(bars_15m)  if bars_15m else {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'},
-        'volume': ind.detect_volume_spike(bars_15m) if bars_15m else {'detected': False, 'ratio': 0.0},
+        'price':        ind.detect_price_spike(bars_15m)  if bars_15m else {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'},
+        'volume':       ind.detect_volume_spike(bars_15m) if bars_15m else {'detected': False, 'ratio': 0.0},
+        'last_price_ts': spike_times['last_price_ts'],
+        'last_vol_ts':   spike_times['last_vol_ts'],
     }
 
     with state_lock:

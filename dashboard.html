@@ -126,15 +126,23 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 /* GRID */
 .content {
   display:grid;
-  grid-template-columns:minmax(320px, 1fr) 290px minmax(220px, .7fr);
+  grid-template-columns:minmax(340px, 1.6fr) 260px 260px 360px;
   gap:8px;
   padding:14px 20px;
   align-items:start;
 }
 .grid {
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
   gap:14px;
+}
+#grid-a, #grid-b {
+  position:sticky;
+  top:92px;
+  background:linear-gradient(180deg, rgba(24,27,34,0.96), rgba(13,14,18,0.96));
+  border:1px solid var(--brd);
+  border-radius:16px;
+  overflow:hidden;
 }
 .aux-panel {
   position:sticky;
@@ -414,6 +422,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 @media (max-width: 980px) {
   .content { grid-template-columns:1fr; }
   .side-panel { position:static; order:-1; }
+  #grid-a, #grid-b { position:static; }
+  #grid-b { display:none; }
   .aux-panel { display:none; }
 }
 
@@ -444,6 +454,55 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 }
 .gear-btn:hover  { border-color:var(--acc-brd); color:var(--acc); }
 .gear-btn.active { background:var(--acc-bg); border-color:var(--acc-brd); color:var(--acc); }
+
+/* TRAFFIC LIGHT SEMÁFORO */
+.tl-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 11px; border-radius:8px; border:1px solid;
+}
+.tl-bar.green  { background:var(--green-bg);  border-color:var(--green-brd); }
+.tl-bar.yellow { background:var(--yellow-bg); border-color:var(--yellow-brd); }
+.tl-bar.red    { background:var(--red-bg);    border-color:var(--red-brd); }
+.tl-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.tl-bar.green  .tl-dot { background:var(--green);  box-shadow:0 0 7px var(--green); }
+.tl-bar.yellow .tl-dot { background:var(--yellow); box-shadow:0 0 7px var(--yellow); }
+.tl-bar.red    .tl-dot { background:var(--red);    box-shadow:0 0 7px var(--red); }
+.tl-lbl { font-size:10px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; flex-shrink:0; }
+.tl-bar.green  .tl-lbl { color:var(--green); }
+.tl-bar.yellow .tl-lbl { color:var(--yellow); }
+.tl-bar.red    .tl-lbl { color:var(--red); }
+.tl-txt { font-size:11px; color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tl-panel { padding:10px 12px; border-radius:10px; border:1px solid; }
+.tl-panel.green  { background:var(--green-bg);  border-color:var(--green-brd); }
+.tl-panel.yellow { background:var(--yellow-bg); border-color:var(--yellow-brd); }
+.tl-panel.red    { background:var(--red-bg);    border-color:var(--red-brd); }
+.tl-panel-head { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+.tl-dot-lg { width:13px; height:13px; border-radius:50%; flex-shrink:0; }
+.tl-panel.green  .tl-dot-lg { background:var(--green);  box-shadow:0 0 10px var(--green); }
+.tl-panel.yellow .tl-dot-lg { background:var(--yellow); box-shadow:0 0 10px var(--yellow); }
+.tl-panel.red    .tl-dot-lg { background:var(--red);    box-shadow:0 0 10px var(--red); }
+.tl-panel-lbl { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.tl-panel.green  .tl-panel-lbl { color:var(--green); }
+.tl-panel.yellow .tl-panel-lbl { color:var(--yellow); }
+.tl-panel.red    .tl-panel-lbl { color:var(--red); }
+.tl-panel-op { font-size:11px; color:var(--dim); margin-top:2px; line-height:1.4; }
+.tl-reasons { display:flex; flex-direction:column; gap:3px; }
+.tl-reason { font-size:11px; color:var(--txt); display:flex; align-items:flex-start; gap:5px; line-height:1.4; }
+.tl-reason-pip { width:3px; height:3px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.tl-panel.green  .tl-reason-pip { background:var(--green); }
+.tl-panel.yellow .tl-reason-pip { background:var(--yellow); }
+.tl-panel.red    .tl-reason-pip { background:var(--red); }
+
+/* PRIVACY TOGGLE */
+.eye-btn {
+  background:transparent; border:1px solid var(--brd); color:var(--dim);
+  width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px;
+  display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.eye-btn:hover   { border-color:var(--acc-brd); color:var(--acc); }
+.eye-btn.active  { background:rgba(239,68,68,.1); border-color:var(--red-brd); color:var(--red); }
+.sensitive       { transition: filter .2s; }
+body.privacy-mode .sensitive { visibility:hidden; }
 </style>
 </head>
 <body>
@@ -462,6 +521,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
     <div class="sess-pill" id="sessPill">---</div>
     <div class="clock" id="clock">--:--:--</div>
     <span class="countdown-badge" id="countdownBadge">--</span>
+    <button class="eye-btn"  id="eyeBtn"  onclick="togglePrivacy()"  title="Ocultar datos sensibles">👁</button>
     <button class="gear-btn" id="gearBtn" onclick="toggleSettings()" title="Configuración">⚙</button>
   </div>
 </div>
@@ -498,8 +558,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 
 <!-- SUMMARY BAR -->
 <div class="summary-bar">
-  <div class="sum-item"><div class="sum-lbl">Posiciones</div><div class="sum-val" id="sumCount" style="color:var(--acc)">--</div></div>
-  <div class="sum-item"><div class="sum-lbl">P&L Total</div><div class="sum-val" id="sumPnl">--</div></div>
+  <div class="sum-item"><div class="sum-lbl">Posiciones</div><div class="sum-val sensitive" id="sumCount" style="color:var(--acc)">--</div></div>
+  <div class="sum-item"><div class="sum-lbl">P&L Total</div><div class="sum-val sensitive" id="sumPnl">--</div></div>
   <div class="sum-item"><div class="sum-lbl">Señales BUY</div><div class="sum-val" id="sumBuy" style="color:var(--green)">--</div></div>
   <div class="sum-item"><div class="sum-lbl">Señales SELL</div><div class="sum-val" id="sumSell" style="color:var(--red)">--</div></div>
   <div class="sum-item"><div class="sum-lbl">Última actualización</div><div class="sum-val" id="sumUpdate" style="color:var(--dim);font-size:12px">--</div></div>
@@ -540,18 +600,12 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
       <div class="empty-sub">Asegúrate de que TWS esté abierto en puerto 7496<br>y que ibkr_server.py esté corriendo</div>
     </div>
   </div>
-  <aside class="side-panel" id="sidePanel">
-    <div class="side-head">
-      <div class="side-kicker">Lectura rápida</div>
-      <div class="side-symbol" id="sideSymbol">---</div>
-      <div class="side-style" id="sideStyle">WAIT</div>
-      <div class="side-price" id="sidePrice">---</div>
-      <div class="side-qty" id="sideQty">---</div>
-    </div>
-    <div class="side-body" id="sideBody">
-      <div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>
-    </div>
-  </aside>
+  <div id="grid-a">
+    <div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>
+  </div>
+  <div id="grid-b">
+    <div class="side-empty">Sin lectura multi-timeframe todavía.</div>
+  </div>
   <aside class="aux-panel" aria-hidden="true">
     <div class="aux-header" id="auxHeader">Historial · RSI (--) · MACD · VOL</div>
     <div class="aux-row" id="auxRow">
@@ -582,6 +636,291 @@ let progressTimer = null;
 let progressStart = Date.now();
 let rsiTf = '15m';
 const indicatorHistory = {};
+const lastSpikeTime     = {}; // { symbol: timestamp } — momento del inicio del spike actual
+const prevSpikeState    = {}; // { symbol: bool } — estado anterior para detectar transición false→true
+
+// ─────────────────────────────────────────────────────────────
+// SEMÁFORO OPERATIVO — Lógica jerárquica, NO score plano
+// Todos los umbrales centralizados aquí para fácil ajuste.
+// ─────────────────────────────────────────────────────────────
+const TL = {
+  // RSI M15 — zonas de entrada óptima por dirección
+  // SUPUESTO: rango 30–50 para longs (momentum que sube desde zona baja)
+  //           rango 50–70 para shorts (momentum que cae desde zona alta)
+  RSI_LONG_MIN:   30,
+  RSI_LONG_MAX:   50,
+  RSI_SHORT_MIN:  50,
+  RSI_SHORT_MAX:  70,
+  RSI_LATE_LONG:  65,   // encima de este → entrada larga tardía
+  RSI_LATE_SHORT: 35,   // debajo de este → entrada corta tardía
+
+  // Volumen (position.volume_ratio)
+  VOL_HIGH: 1.5,         // requerido para GO limpio
+  VOL_MIN:  1.0,         // mínimo aceptable (GO con nota)
+
+  // Microestructura M5 (candles consecutivas)
+  CANDLE_TRIGGER: 2,     // mínimo para considerar trigger
+  CANDLE_LATE:    4,     // 4+ = impulso probablemente agotado
+
+  // Score M15 de multi_tf (−3 a +3)
+  SCORE_STRONG:   2,     // |score| >= este → sesgo definido, no rango
+
+  // Sesiones no operables
+  // SUPUESTO: coinciden con session_name() en indicators.py
+  NO_TRADE_SESSIONS: ['NY cierre', 'Asian'],
+};
+
+// ── getM15Context ─────────────────────────────────────────────
+// Evalúa el contexto del timeframe principal (M15).
+// Devuelve: { favorable, direction, isLate, isRange, rsiOk, macdOk, macdStrong, reasons }
+function getM15Context(position) {
+  const m15 = (position.multi_tf || {})['15m'];
+  const reasons = [];
+
+  // Dirección: M15 bias primero, fallback a position.decision
+  let direction = 'neutral';
+  if (m15) {
+    if (m15.bias === 'BULLISH') direction = 'long';
+    else if (m15.bias === 'BEARISH') direction = 'short';
+  }
+  if (direction === 'neutral') {
+    const dec = position.decision || '';
+    if (dec === 'BUY'  || dec === 'WATCH_BUY')  direction = 'long';
+    if (dec === 'SELL' || dec === 'WATCH_SELL') direction = 'short';
+  }
+
+  if (!m15) {
+    reasons.push('Sin datos M15 disponibles');
+    return { favorable:false, direction, isLate:false, isRange:true, rsiOk:false, macdOk:false, macdStrong:false, reasons };
+  }
+
+  const rsi   = Number(m15.rsi || 50);
+  const macd  = m15.macd || {};
+  const score = Number(m15.score || 0);
+  const bias  = m15.bias || 'NEUTRAL';
+
+  // Rango: sesgo neutro y score débil
+  const isRange = bias === 'NEUTRAL' && Math.abs(score) < TL.SCORE_STRONG;
+  if (isRange) reasons.push(`M15 en rango — sesgo neutro (score ${score >= 0 ? '+' : ''}${score})`);
+
+  // Entrada tardía: RSI ya extendido en la dirección
+  const isLate = (direction === 'long'  && rsi > TL.RSI_LATE_LONG) ||
+                 (direction === 'short' && rsi < TL.RSI_LATE_SHORT);
+  if (isLate) reasons.push(`RSI M15 ${rsi.toFixed(1)} — movimiento extendido, entrada tardía`);
+
+  // RSI en zona útil de entrada
+  const rsiOk = (direction === 'long'  && rsi >= TL.RSI_LONG_MIN  && rsi <= TL.RSI_LONG_MAX) ||
+                (direction === 'short' && rsi >= TL.RSI_SHORT_MIN && rsi <= TL.RSI_SHORT_MAX);
+  if (rsiOk) {
+    reasons.push(`RSI M15 ${rsi.toFixed(1)} en zona de entrada ${direction === 'long' ? 'larga' : 'corta'}`);
+  } else if (!isLate && !isRange && direction !== 'neutral') {
+    const zone = direction === 'long' ? `${TL.RSI_LONG_MIN}–${TL.RSI_LONG_MAX}` : `${TL.RSI_SHORT_MIN}–${TL.RSI_SHORT_MAX}`;
+    reasons.push(`RSI M15 ${rsi.toFixed(1)} fuera de zona óptima (${zone})`);
+  }
+
+  // MACD alineado con dirección
+  const macdOk = (direction === 'long'  && (macd.bullish === true  || macd.cross_up   === true)) ||
+                 (direction === 'short' && (macd.bullish === false || macd.cross_down === true));
+  // "fuerte" = alineado Y histograma empujando en la dirección correcta
+  const macdStrong = macdOk && ((direction === 'long' && (macd.hist || 0) > 0) ||
+                                (direction === 'short' && (macd.hist || 0) < 0));
+  if (macdStrong) {
+    const lbl = macd.cross_up ? 'cruce alcista' : macd.cross_down ? 'cruce bajista' : 'alineado';
+    reasons.push(`MACD M15 ${lbl} e histograma creciendo`);
+  } else if (macdOk) {
+    reasons.push('MACD M15 alineado — histograma débil');
+  } else if (!isRange && direction !== 'neutral') {
+    reasons.push(`MACD M15 no alineado con dirección ${direction === 'long' ? 'alcista' : 'bajista'}`);
+  }
+
+  const favorable = !isRange && !isLate && rsiOk && macdOk && direction !== 'neutral';
+  return { favorable, direction, isLate, isRange, rsiOk, macdOk, macdStrong, reasons };
+}
+
+// ── getM5Trigger ──────────────────────────────────────────────
+// Evalúa la confirmación de entrada en M5 (timing / microestructura).
+// Devuelve: { confirmed, isLate, reasons }
+function getM5Trigger(position, direction) {
+  const m5      = (position.multi_tf || {})['5m'];
+  const candles = position.candles || {};
+  const reasons = [];
+
+  if (!m5 || direction === 'neutral') {
+    reasons.push(direction === 'neutral' ? 'Sin dirección para evaluar M5' : 'Sin datos M5');
+    return { confirmed:false, isLate:false, reasons };
+  }
+
+  const rsi5   = Number(m5.rsi || 50);
+  const macd5  = m5.macd || {};
+  const bias5  = m5.bias || 'NEUTRAL';
+  const greenC = Number(candles.green_consecutive || 0);
+  const redC   = Number(candles.red_consecutive   || 0);
+  const candC  = direction === 'long' ? greenC : redC;
+
+  // Demasiadas velas consecutivas → impulso probablemente agotado
+  if (candC >= TL.CANDLE_LATE) {
+    reasons.push(`${candC} velas ${direction === 'long' ? 'verdes' : 'rojas'} consecutivas — impulso posiblemente agotado`);
+    return { confirmed:false, isLate:true, reasons };
+  }
+
+  // Microestructura: velas mínimas como proxy de HH/HL o LL/LH
+  // SUPUESTO: 2+ velas consecutivas = evidencia de microestructura alcista/bajista en M5
+  const hasCandleTrigger = candC >= TL.CANDLE_TRIGGER;
+  if (hasCandleTrigger) {
+    reasons.push(`${candC} velas ${direction === 'long' ? 'verdes' : 'rojas'} consecutivas — microestructura M5`);
+  }
+
+  // MACD M5 alineado
+  const macd5Ok = (direction === 'long'  && (macd5.bullish === true  || macd5.cross_up   === true)) ||
+                  (direction === 'short' && (macd5.bullish === false || macd5.cross_down === true));
+  if (macd5Ok) {
+    const lbl = macd5.cross_up ? 'cruce alcista' : macd5.cross_down ? 'cruce bajista' : 'alineado';
+    reasons.push(`MACD M5 ${lbl}`);
+  }
+
+  // RSI M5 con momentum
+  const rsi5Ok = (direction === 'long'  && rsi5 > 50 && rsi5 < 70) ||
+                 (direction === 'short' && rsi5 < 50 && rsi5 > 30);
+  if (rsi5Ok) reasons.push(`RSI M5 ${rsi5.toFixed(1)} con momentum a favor`);
+
+  // Sesgo M5 alineado con dirección
+  const m5BiasOk = (direction === 'long' && bias5 === 'BULLISH') || (direction === 'short' && bias5 === 'BEARISH');
+
+  // Trigger confirmado: velas + al menos una señal más
+  const confirmed = hasCandleTrigger && (macd5Ok || rsi5Ok || m5BiasOk);
+  // Señal fuerte sin velas: cruce MACD M5 solo cuenta como trigger
+  const confirmedByMacdCross = !hasCandleTrigger && ((macd5.cross_up && direction === 'long') || (macd5.cross_down && direction === 'short'));
+
+  if (!hasCandleTrigger && !confirmedByMacdCross) reasons.push('M5 sin trigger — microestructura insuficiente');
+
+  return { confirmed: confirmed || confirmedByMacdCross, isLate:false, reasons };
+}
+
+// ── getVolumeFilter ───────────────────────────────────────────
+function getVolumeFilter(position) {
+  const ratio = Number(position.volume_ratio || 0);
+  let level, pass;
+  if      (ratio >= TL.VOL_HIGH) { level = 'high';       pass = true;  }
+  else if (ratio >= TL.VOL_MIN)  { level = 'acceptable'; pass = true;  }
+  else                           { level = 'low';        pass = false; }
+  const label = level === 'high' ? `Volumen ${ratio.toFixed(2)}x — alto, confirma movimiento`
+              : level === 'acceptable' ? `Volumen ${ratio.toFixed(2)}x — aceptable`
+              : `Volumen ${ratio.toFixed(2)}x — débil, filtra entrada`;
+  return { pass, level, ratio, reasons: [label] };
+}
+
+// ── getSessionFilter ──────────────────────────────────────────
+function getSessionFilter(position) {
+  const session = position.session || '';
+  const isBad = TL.NO_TRADE_SESSIONS.some(s => session.toLowerCase() === s.toLowerCase());
+  const label = isBad ? `Outside regular trading hours (${session})`
+               : session ? `Sesión: "${session}" — ventana operable`
+               : 'Sesión no disponible';
+  return { tradeable: !isBad, sessionName: session, reasons: [label] };
+}
+
+// ── getTrafficLightState ──────────────────────────────────────
+// Función principal. Jerarquía: Session → M15 → M5 → Volumen.
+// Conflicto entre señales → preferir ROJO.
+//
+// TEST CASES:
+// CASO 1 — GO válido:
+//   session:"New York" | m15: bias=BULLISH, rsi=44, macd.bullish=true, hist=0.05
+//   m5: macd.cross_up=true | candles.green_consecutive=2 | volume_ratio=1.8
+//   → { state:'green', label:'GO' }
+//
+// CASO 2 — WATCH (sin confirmación M5):
+//   session:"London+NY" | m15: bias=BULLISH, rsi=42, macd.bullish=true
+//   m5: bias=NEUTRAL, macd.bullish=false | candles.green_consecutive=1 | volume_ratio=1.6
+//   → { state:'yellow', label:'WATCH', operativeText:'Contexto M15 favorable — esperando confirmación M5' }
+//
+// CASO 3 — NO TRADE (NY cierre):
+//   session:"NY cierre" | m15: bias=BULLISH | candles.green_consecutive=2 | volume_ratio=1.7
+//   → { state:'red', label:'NO TRADE', operativeText:'Evitar: NY cierre — fuera de ventana operativa' }
+//
+// CASO 4 — NO TRADE (señal tardía):
+//   session:"New York" | m15: bias=BULLISH, rsi=68 | candles.green_consecutive=5
+//   → { state:'red', label:'NO TRADE', operativeText:'Movimiento extendido — entrada tardía' }
+function getTrafficLightState(position) {
+  const m15ctx = getM15Context(position);
+  const sess   = getSessionFilter(position);
+  const vol    = getVolumeFilter(position);
+  const m5trg  = getM5Trigger(position, m15ctx.direction);
+  const top    = (arr, n=5) => arr.filter(Boolean).slice(0, n);
+
+  // ── BLOQUEO: sesión no operable ──────────────────────────────
+  if (!sess.tradeable) {
+    return { state:'red', label:'ORTH', direction:m15ctx.direction,
+      reasons: top([sess.reasons[0], ...m15ctx.reasons.slice(0,2)]),
+      operativeText: 'Outside regular trading hours' };
+  }
+
+  // ── BLOQUEO: M15 en rango ────────────────────────────────────
+  if (m15ctx.isRange) {
+    return { state:'red', label:'NO TRADE', direction:m15ctx.direction,
+      reasons: top([m15ctx.reasons[0], vol.reasons[0], m5trg.reasons[0]]),
+      operativeText: 'Estructura M15 en rango — esperar definición de dirección' };
+  }
+
+  // ── BLOQUEO: entrada tardía (RSI extendido o 4+ velas M5) ────
+  if (m15ctx.isLate || m5trg.isLate) {
+    const lateR = m15ctx.isLate
+      ? m15ctx.reasons.find(r => r.includes('extendido') || r.includes('tardía'))
+      : m5trg.reasons[0];
+    return { state:'red', label:'NO TRADE', direction:m15ctx.direction,
+      reasons: top([lateR, vol.reasons[0]]),
+      operativeText: 'Movimiento extendido — entrada tardía, esperar pullback' };
+  }
+
+  // ── BLOQUEO: sin dirección operativa ─────────────────────────
+  if (m15ctx.direction === 'neutral') {
+    return { state:'red', label:'NO TRADE', direction:'neutral',
+      reasons: top(['Sin sesgo direccional en M15', vol.reasons[0]]),
+      operativeText: 'Sin dirección operativa — no hay setup válido' };
+  }
+
+  // ── BLOQUEO: señales contradictorias + volumen débil ─────────
+  if (!m15ctx.macdOk && !vol.pass) {
+    return { state:'red', label:'NO TRADE', direction:m15ctx.direction,
+      reasons: top([...m15ctx.reasons.slice(0,2), vol.reasons[0]]),
+      operativeText: 'MACD M15 no alineado y volumen débil — señales contradictorias' };
+  }
+
+  // ── VERDE: contexto + trigger + volumen ──────────────────────
+  if (m15ctx.favorable && m5trg.confirmed && vol.pass) {
+    const note = vol.level === 'acceptable' ? ' — validar tamaño de posición' : '';
+    return { state:'green', label:'GO', direction:m15ctx.direction,
+      reasons: top([
+        ...m15ctx.reasons.filter(r => !r.includes('fuera')).slice(0,2),
+        ...m5trg.reasons.slice(0,2),
+        vol.reasons[0],
+      ]),
+      operativeText: `M15 favorable + trigger M5 confirmado${note}` };
+  }
+
+  // ── AMARILLO: condiciones parciales ─────────────────────────
+  const yR = [];
+  let opTxt = 'Condiciones parciales — vigilar confirmación';
+
+  if (m15ctx.favorable && !m5trg.confirmed) {
+    opTxt = 'Contexto M15 favorable — esperando confirmación M5';
+    yR.push(...m15ctx.reasons.filter(r => !r.includes('fuera')).slice(0,2),
+            ...m5trg.reasons.slice(0,2), vol.reasons[0]);
+  } else if (!m15ctx.rsiOk && m5trg.confirmed) {
+    opTxt = 'M5 con trigger — RSI M15 aún fuera de zona óptima';
+    yR.push(...m15ctx.reasons.slice(0,2), ...m5trg.reasons.slice(0,1), vol.reasons[0]);
+  } else if (!vol.pass) {
+    opTxt = 'Setup potencial — volumen insuficiente para confirmar entrada';
+    yR.push(...m15ctx.reasons.filter(r => !r.includes('fuera')).slice(0,1),
+            vol.reasons[0], ...m5trg.reasons.slice(0,1));
+  } else {
+    yR.push(...m15ctx.reasons.slice(0,2), ...m5trg.reasons.slice(0,1), vol.reasons[0]);
+  }
+
+  return { state:'yellow', label:'WATCH', direction:m15ctx.direction,
+    reasons: top(yR), operativeText: opTxt };
+}
+// ─────────────────────────────────────────────────────────────
 
 // FIX 8: sanitizar HTML para prevenir XSS
 function esc(s) {
@@ -667,6 +1006,14 @@ function restartAutoRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(fetchPositions, refreshMs);
   startCountdown();
+}
+
+function togglePrivacy() {
+  const on = document.body.classList.toggle('privacy-mode');
+  const btn = document.getElementById('eyeBtn');
+  btn.classList.toggle('active', on);
+  btn.title = on ? 'Mostrar datos sensibles' : 'Ocultar datos sensibles';
+  btn.textContent = on ? '🙈' : '👁';
 }
 
 function toggleSettings() {
@@ -892,7 +1239,7 @@ function renderAlerts() {
       <span class="alert-dec" style="color:${col}">${icon}</span>
       <span class="alert-price">$${p.price.toFixed(2)}</span>
       <span class="alert-sigs" style="margin:0 8px">${dots}</span>
-      <span style="font-family:'Space Mono',monospace;font-size:11px;color:${pnlColor}">${pnlTxt}</span>
+      <span class="sensitive" style="font-family:'Space Mono',monospace;font-size:11px;color:${pnlColor}">${pnlTxt}</span>
     </div>`;
   }).join('');
 }
@@ -911,7 +1258,7 @@ async function jumpToTicker(sym) {
   restartAutoRefresh();
   await fetchPositions();
   applyFilters();
-  window.scrollTo({top: document.querySelector('.grid').offsetTop - 10, behavior:'smooth'});
+  window.scrollTo({top: document.getElementById('grid').offsetTop - 10, behavior:'smooth'});
 }
 
 // RENDER GRID
@@ -981,12 +1328,14 @@ function renderCard(p) {
   const volumeBadgeBg = volumeRatio >= 1.5 ? 'var(--green-bg)' : volumeRatio >= 1 ? 'var(--yellow-bg)' : 'rgba(255,255,255,.04)';
   const volumeBadgeBorder = volumeRatio >= 1.5 ? 'var(--green-brd)' : volumeRatio >= 1 ? 'var(--yellow-brd)' : 'var(--brd)';
   const volLabel = p.vol_label || (volumeRatio >= 1.0 ? 'con volumen' : 'sin volumen');
+  const tl = getTrafficLightState(p);
+  const tlArrow = tl.direction === 'long' ? ' ↑' : tl.direction === 'short' ? ' ↓' : '';
   return `
   <div class="card ${cardCls}" id="card-${esc(p.symbol)}">
     <div class="card-head">
       <div>
         <div class="card-sym">${esc(p.symbol)}</div>
-        <div style="font-size:10px;color:var(--dim);margin-top:2px;">${p.qty} acciones · costo $${p.avg_cost.toFixed(2)}</div>
+        <div class="sensitive" style="font-size:10px;color:var(--dim);margin-top:2px;">${p.qty} acciones · costo $${p.avg_cost.toFixed(2)}</div>
       </div>
       <div style="text-align:right;">
         <div class="card-price" style="color:${priceColor}">$${p.price.toFixed(2)}</div>
@@ -994,6 +1343,7 @@ function renderCard(p) {
       </div>
     </div>
     <div class="card-body">
+      <div class="tl-bar ${tl.state}"><div class="tl-dot"></div><span class="tl-lbl">${tl.label}${tlArrow}</span><span class="tl-txt">${esc(tl.operativeText)}</span></div>
       <div class="dec-banner ${d.cls}"><span>${d.icon} ${d.txt}</span><span style="font-size:11px;opacity:.75;">${dec}</span></div>
       <div class="signals">${sigPills}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1002,15 +1352,34 @@ function renderCard(p) {
         <div class="sig-pill ${volLabel==='con volumen'?'sig-on':'sig-off'}">${volLabel}</div>
       </div>
       <!-- SPIKE 15M -->
-      <div style="display:flex;gap:6px;align-items:center;">
-        <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;">Spike 15m</span>
-        ${(()=>{ const sp = p.spike||{}; const pr = sp.price||{}; const vo = sp.volume||{};
-          const dirIcon = pr.direction==='UP'?' ↑':pr.direction==='DOWN'?' ↓':'';
-          const pCls = pr.detected?'sig-on':'sig-off';
-          const vCls = vo.detected?'sig-on':'sig-off';
-          return `<div class="sig-pill ${pCls}">${pr.detected?'✓':'○'} Precio${pr.detected?' ×'+pr.ratio+dirIcon:''}</div>`+
-                 `<div class="sig-pill ${vCls}">${vo.detected?'✓':'○'} Vol${vo.detected?' ×'+vo.ratio:''}</div>`;
-        })()}</div>
+      ${(()=>{
+        const sp = p.spike||{}; const pr = sp.price||{}; const vo = sp.volume||{};
+        const anySpike = pr.detected || vo.detected;
+        // Usar el timestamp más reciente devuelto por el servidor (segundos → ms)
+        const srvPriceMs = sp.last_price_ts ? sp.last_price_ts * 1000 : null;
+        const srvVolMs   = sp.last_vol_ts   ? sp.last_vol_ts   * 1000 : null;
+        const srvBestMs  = (srvPriceMs && srvVolMs) ? Math.max(srvPriceMs, srvVolMs)
+                         : (srvPriceMs || srvVolMs || null);
+        // Inicializar desde servidor si tenemos dato y es más reciente que lo que ya guardamos
+        if (srvBestMs && (!lastSpikeTime[p.symbol] || srvBestMs > lastSpikeTime[p.symbol])) {
+          lastSpikeTime[p.symbol] = srvBestMs;
+        }
+        // Fallback: si hay spike activo ahora y aún no tenemos timestamp, usar Date.now()
+        if (anySpike && !lastSpikeTime[p.symbol]) lastSpikeTime[p.symbol] = Date.now();
+        prevSpikeState[p.symbol] = anySpike;
+        const dirIcon = pr.direction==='UP'?' ↑':pr.direction==='DOWN'?' ↓':'';
+        const pCls = pr.detected?'sig-on':'sig-off';
+        const vCls = vo.detected?'sig-on':'sig-off';
+        const timerTxt = lastSpikeTime[p.symbol] ? 'hace ' + formatElapsed(Date.now() - lastSpikeTime[p.symbol]) : '--';
+        return `<div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:13px;font-weight:800;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Spike 15m</span>
+            <div class="sig-pill ${pCls}">${pr.detected?'✓':'○'} Precio${pr.detected?' ×'+pr.ratio+dirIcon:''}</div>
+            <div class="sig-pill ${vCls}">${vo.detected?'✓':'○'} Vol${vo.detected?' ×'+vo.ratio:''}</div>
+          </div>
+          <div id="spike-tmr-${p.symbol}" style="font-size:13px;font-weight:800;color:var(--yellow);padding-left:2px;">${timerTxt}</div>
+        </div>`;
+      })()}
       <!-- RSI GAUGE -->
       <div style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -1092,7 +1461,7 @@ function renderCard(p) {
           <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--green);">+$${p.tp1_suggested.toFixed(2)}</div>
         </div>
       </div>
-      <div class="pnl-row">
+      <div class="pnl-row sensitive">
         <div>
           <div class="pnl-lbl">P&L no realizado</div>
           <div style="font-size:9px;color:var(--dim);margin-top:1px;">$${p.pnl_per_share.toFixed(2)} por acción</div>
@@ -1106,6 +1475,16 @@ function renderCard(p) {
   </div>`;
 }
 
+function formatElapsed(ms) {
+  if (ms < 0 || isNaN(ms)) return '--';
+  const s = Math.floor(ms / 1000);
+  if (s < 60)  return `${s}s`;
+  const m = Math.floor(s / 60), rs = s % 60;
+  if (m < 60)  return rs > 0 ? `${m}m ${rs}s` : `${m}m`;
+  const h = Math.floor(m / 60), rm = m % 60;
+  return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
+}
+
 function formatCompactNumber(value) {
   const n = Number(value || 0);
   if (n >= 1000000) return (n / 1000000).toFixed(2)+'M';
@@ -1114,25 +1493,16 @@ function formatCompactNumber(value) {
 }
 
 function renderTeleprompt(position) {
-  const symbolEl = document.getElementById('sideSymbol');
-  const styleEl = document.getElementById('sideStyle');
-  const priceEl = document.getElementById('sidePrice');
-  const qtyEl = document.getElementById('sideQty');
-  const bodyEl = document.getElementById('sideBody');
+  const gridA = document.getElementById('grid-a');
+  const gridB = document.getElementById('grid-b');
   const auxRow = document.getElementById('auxRow');
   const auxHeader = document.getElementById('auxHeader');
 
   if (auxHeader) auxHeader.textContent = `Historial · RSI (${rsiTf}) · MACD · VOL`;
 
   if (!position) {
-    symbolEl.textContent = '---';
-    styleEl.textContent = 'WAIT';
-    styleEl.style.color = 'var(--dim)';
-    styleEl.style.background = 'rgba(255,255,255,.04)';
-    styleEl.style.borderColor = 'var(--brd)';
-    priceEl.textContent = '---';
-    qtyEl.textContent = '---';
-    bodyEl.innerHTML = '<div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>';
+    gridA.innerHTML = '<div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>';
+    gridB.innerHTML = '<div class="side-empty">Sin lectura multi-timeframe todavía.</div>';
     auxRow.innerHTML = '<div class="aux-line"><span class="aux-pill" style="color:var(--dim)">--:--:--</span><span class="aux-pill" style="color:var(--dim)">RSI --</span><span class="aux-pill" style="color:var(--dim)">MACD --</span><span class="aux-pill" style="color:var(--dim)">VOL --</span></div>';
     return;
   }
@@ -1208,34 +1578,29 @@ function renderTeleprompt(position) {
   const styleColor = position.trade_style === 'SCALP' ? 'var(--green)' : position.trade_style === 'SWING' ? 'var(--blue)' : 'var(--yellow)';
   const styleBg = position.trade_style === 'SCALP' ? 'var(--green-bg)' : position.trade_style === 'SWING' ? 'var(--blue-bg)' : 'var(--yellow-bg)';
   const styleBorder = position.trade_style === 'SCALP' ? 'var(--green-brd)' : position.trade_style === 'SWING' ? 'var(--blue-brd)' : 'var(--yellow-brd)';
-  symbolEl.textContent = position.symbol || '---';
-  styleEl.textContent = `${position.trade_style || 'WAIT'} · ${position.trade_note || ''}`.trim();
-  styleEl.style.color = styleColor;
-  styleEl.style.background = styleBg;
-  styleEl.style.borderColor = styleBorder;
-  priceEl.textContent = `$${price.toFixed(2)}`;
-  qtyEl.textContent = `${Number(position.qty || 0)} acciones · costo $${Number(position.avg_cost || 0).toFixed(2)}`;
-  const oneMinute = multiTf['1m'] || null;
+  const styleLabel = `${position.trade_style || 'WAIT'} · ${position.trade_note || ''}`.trim();
+
   const history = indicatorHistory[position.symbol] || [];
   const liveSummary = history.map((item, index) => {
     const prevItem = history[index + 1];
     const rsiArrow = prevItem ? (item.rsi > prevItem.rsi ? '↑' : item.rsi < prevItem.rsi ? '↓' : '→') : '→';
     const rsiArrowColor = prevItem ? (item.rsi > prevItem.rsi ? 'var(--green)' : item.rsi < prevItem.rsi ? 'var(--red)' : 'var(--txt)') : 'var(--txt)';
-    const rsiTone = item.rsi > 70 ? 'var(--red)' : item.rsi < 30 ? 'var(--green)' : 'var(--txt)';
-    const macdTone = item.macd === 'Alcista' || item.macd === 'Cruce up' ? 'var(--green)' : 'var(--red)';
-    const volTone = item.vol === 'con volumen' ? 'var(--green)' : 'var(--red)';
+    const rsiToneC = item.rsi > 70 ? 'var(--red)' : item.rsi < 30 ? 'var(--green)' : 'var(--txt)';
+    const macdToneC = item.macd === 'Alcista' || item.macd === 'Cruce up' ? 'var(--green)' : 'var(--red)';
+    const volToneC = item.vol === 'con volumen' ? 'var(--green)' : 'var(--red)';
     const volText = item.vol === 'con volumen' ? 'VOL ALTO' : 'VOL BAJO';
     return `
       <div class="aux-line">
         <span class="aux-pill">${item.t}</span>
-        <span class="aux-pill" style="color:${rsiTone};">RSI ${item.rsi.toFixed(1)} <span style="color:${rsiArrowColor};">${rsiArrow}</span></span>
-        <span class="aux-pill" style="color:${macdTone};">MACD ${item.macd}</span>
-        <span class="aux-pill" style="color:${volTone};">${volText}</span>
+        <span class="aux-pill" style="color:${rsiToneC};">RSI ${item.rsi.toFixed(1)} <span style="color:${rsiArrowColor};">${rsiArrow}</span></span>
+        <span class="aux-pill" style="color:${macdToneC};">MACD ${item.macd}</span>
+        <span class="aux-pill" style="color:${volToneC};">${volText}</span>
       </div>
     `;
   }).join('');
   auxRow.innerHTML = liveSummary || '<div class="aux-line"><span class="aux-pill">--:--:--</span><span class="aux-pill">RSI --</span><span class="aux-pill">MACD --</span><span class="aux-pill">VOL --</span></div>';
-  bodyEl.innerHTML = rows.map(([color, title, sub]) => `
+
+  const teleRowsHTML = rows.map(([color, title, sub]) => `
     <div class="tele-row">
       <div class="tele-dot" style="background:${color}; box-shadow:0 0 10px ${color};"></div>
       <div class="tele-copy">
@@ -1251,7 +1616,40 @@ function renderTeleprompt(position) {
         <div class="tele-sub">${position.structure_note || ''}</div>
       </div>
     </div>
-    <div class="tf-stack">${tfRows || '<div class="side-empty">Sin lectura multi-timeframe todavía.</div>'}</div>
+  `;
+
+  const tl = getTrafficLightState(position);
+  const tlArrow = tl.direction === 'long' ? ' ↑' : tl.direction === 'short' ? ' ↓' : '';
+  const tlPanelHtml = `<div class="tl-panel ${tl.state}">
+    <div class="tl-panel-head">
+      <div class="tl-dot-lg"></div>
+      <div>
+        <div class="tl-panel-lbl">${tl.label}${tlArrow}</div>
+        <div class="tl-panel-op">${esc(tl.operativeText)}</div>
+      </div>
+    </div>
+    <div class="tl-reasons">${tl.reasons.map(r => `<div class="tl-reason"><div class="tl-reason-pip"></div><span>${esc(r)}</span></div>`).join('')}</div>
+  </div>`;
+
+  gridA.innerHTML = `
+    <div class="side-head">
+      <div class="side-kicker">Lectura rápida</div>
+      <div class="side-symbol">${esc(position.symbol || '---')}</div>
+      <div class="side-style" style="color:${styleColor};background:${styleBg};border-color:${styleBorder};">${esc(styleLabel)}</div>
+      <div class="side-price">$${price.toFixed(2)}</div>
+      <div class="side-qty sensitive">${Number(position.qty||0)} acciones · costo $${Number(position.avg_cost||0).toFixed(2)}</div>
+    </div>
+    <div class="side-body">${tlPanelHtml}${teleRowsHTML}</div>
+  `;
+
+  gridB.innerHTML = `
+    <div class="side-head">
+      <div class="side-kicker">Multi-Timeframe</div>
+      <div class="side-symbol">${esc(position.symbol || '---')}</div>
+    </div>
+    <div class="side-body">
+      <div class="tf-stack">${tfRows || '<div class="side-empty">Sin lectura multi-timeframe todavía.</div>'}</div>
+    </div>
   `;
 }
 
@@ -1259,6 +1657,14 @@ function renderTeleprompt(position) {
 loadConfig();
 fetchPositions();
 restartAutoRefresh();
+
+// Actualiza los timers de spike cada segundo sin re-renderizar las cards
+setInterval(() => {
+  Object.keys(lastSpikeTime).forEach(sym => {
+    const el = document.getElementById('spike-tmr-' + sym);
+    if (el) el.textContent = 'hace ' + formatElapsed(Date.now() - lastSpikeTime[sym]);
+  });
+}, 1000);
 </script>
 </body>
 </html>

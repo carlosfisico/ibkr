@@ -23,6 +23,7 @@ Funciones puras de cálculo, sin estado, sin imports de IBKR.
 - `calc_rsi`, `calc_macd` (O(n) con `_ema_series`), `calc_atr`, `calc_volume_metrics`
 - `detect_price_spike(bars, multiplier=2.0, period=20)` — cuerpo de vela vs promedio últimas 20
 - `detect_volume_spike(bars, multiplier=2.5, period=20)` — volumen vs promedio últimas 20
+- `last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20)` — escanea barras históricas hacia atrás y devuelve `{'last_price_ts': float|None, 'last_vol_ts': float|None}` en Unix seconds
 - `signal_decision`, `timeframe_bias`, `choose_trade_style`, `session_name` (DST-aware con pytz)
 
 ### `ibkr_client.py`
@@ -32,8 +33,8 @@ Conexión IBKR, estado global, market data, análisis.
 - `MULTI_TF_CONFIG`: 1m, 5m, 15m, 1h, 4h, 1D
 - `_fetch_all_tf_bars` — fetch paralelo con `asyncio.gather`
 - `refresh_position_snapshot` — snapshot + RSI/MACD/ATR/SL/TP del TF principal
-- `refresh_multi_tf_analysis` — análisis multi-TF + **spike detection en barras 15m**
-- `state['positions'][sym]` incluye campo `'spike': {'price': {...}, 'volume': {...}}`
+- `refresh_multi_tf_analysis` — análisis multi-TF + spike detection en barras 15m
+- `state['positions'][sym]['spike']` incluye: `price`, `volume`, `last_price_ts`, `last_vol_ts`
 
 ### `ibkr_server.py`
 HTTP server + threads de fondo + main entry point.
@@ -44,12 +45,22 @@ HTTP server + threads de fondo + main entry point.
 
 ### `dashboard.html`
 Frontend completo en un solo archivo.
-- **TF selector para RSI/MACD**: botones 1m/5m/15m/1h/4h/1D en panel de settings (default: 15m)
-- `getRsiModel(p)` y `getMacdModel(p)` leen de `p.multi_tf[rsiTf]` si existe, si no fallback
-- **Panel izquierdo** (`side-panel`): teleprompt con tones RSI/MACD/Vol/Decisión + stack multi-TF
-- **Panel derecho** (`aux-panel`): historial con timestamps (RSI, MACD, VOL) — cabecera muestra TF activo
-- **Spike 15m**: en cada card, dos palomitas independientes: `✓ Precio ×N ↑` y `✓ Vol ×N`
-- **Countdown badge**: texto "5s", "4s"... en header, reemplaza la barra de progreso
+- **Layout 4 columnas**: cards (izq) | grid-a (análisis/teleprompt) | grid-b (multi-TF) | aux-panel (historial, 360px)
+  - `grid-template-columns: minmax(340px, 1.6fr) 260px 260px 360px`
+- **Privacy toggle** (ojito 👁 en header): `body.privacy-mode .sensitive { visibility:hidden }` — oculta qty, avg cost, P&L no realizado, # posiciones, P&L total
+- **Semáforo (traffic light)**: en cada card, lógica jerárquica (no scoring plano):
+  - Rojo: sesión ORTH (NY cierre/Asian), rango M15 inválido, entrada tardía, sin dirección
+  - Amarillo: señales conflictivas (MACD vs volumen)
+  - Verde: todos los filtros pasan
+  - Config en objeto `TL` (RSI_LONG_MIN/MAX, VOL_HIGH, CANDLE_TRIGGER, etc.)
+  - Estado ORTH: label `'ORTH'`, texto `'Outside regular trading hours'`
+- **TF selector para RSI/MACD**: botones 1m/5m/15m/1h/4h/1D en settings (default: 15m)
+- **Spike 15m** en cada card:
+  - Label "Spike 15m" en amarillo bold 13px
+  - Cronómetro `"hace Xm Ys"` que persiste entre recargas usando `p.spike.last_price_ts` / `last_vol_ts` del servidor
+  - `lastSpikeTime[sym]` se inicializa desde el servidor (timestamp más reciente de precio o volumen); fallback a `Date.now()` si hay spike activo sin timestamp
+  - `setInterval` de 1s actualiza el DOM del timer sin re-renderizar la card
+- **Countdown badge**: texto "5s", "4s"... en header
 - **Settings panel**: refresco dashboard (1s/3s/5s/10s/30s), RSI TF, analytics servidor (1s/3s/5s/10s)
 - `esc()` helper anti-XSS en todos los strings del usuario
 
@@ -57,10 +68,11 @@ Frontend completo en un solo archivo.
 
 ## Lo que sigue (pendiente)
 
-### Spike — fase 2 (volumen)
+### Spike — mejoras
 - [ ] Afinar umbrales: `multiplier` de precio (2.0) y volumen (2.5) — verificar con datos reales
 - [ ] Considerar usar rango de vela (`high - low`) además del cuerpo (`|close - open|`) para capturar mechas largas
-- [ ] En el panel central (teleprompt), agregar una fila de "Spike 15m" con descripción textual igual que RSI/MACD
+- [ ] En panel central (grid-a/teleprompt), agregar fila "Spike 15m" con descripción textual
+- [ ] El cronómetro busca en los últimos 5 días — considerar filtrar solo barras de hoy si se prefiere
 
 ### Mejoras de UX pendientes
 - [ ] Al seleccionar un ticker, hacer scroll automático a su card
