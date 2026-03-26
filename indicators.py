@@ -99,31 +99,33 @@ def calc_atr(bars, period=14):
 def detect_price_spike(bars, multiplier=2.0, period=20):
     """Detecta si la última vela de 15m tiene un rango (high-low) inusualmente grande."""
     if len(bars) < 3:
-        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'}
+        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL', 'current_range': 0.0, 'avg_range': 0.0}
     bodies   = [bar.high - bar.low for bar in bars]
     current  = bodies[-1]
     baseline = bodies[-(period + 1):-1]
     avg      = sum(baseline) / len(baseline) if baseline else 0
     if avg == 0 or current == 0:
-        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'}
+        return {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL', 'current_range': round(current, 4), 'avg_range': round(avg, 4)}
     ratio    = current / avg
     detected = ratio >= multiplier
     direction = ('UP' if bars[-1].close > bars[-1].open else 'DOWN') if detected else 'NEUTRAL'
-    return {'detected': detected, 'ratio': round(ratio, 2), 'direction': direction}
+    return {'detected': detected, 'ratio': round(ratio, 2), 'direction': direction,
+            'current_range': round(current, 4), 'avg_range': round(avg, 4)}
 
 
 def detect_volume_spike(bars, multiplier=2.5, period=20):
     """Detecta si el volumen de la última vela explota respecto al promedio reciente."""
     if len(bars) < 3:
-        return {'detected': False, 'ratio': 0.0}
+        return {'detected': False, 'ratio': 0.0, 'current_vol': 0, 'avg_vol': 0}
     volumes  = [int(getattr(bar, 'volume', 0) or 0) for bar in bars]
     current  = volumes[-1]
     baseline = volumes[-(period + 1):-1]
     avg      = sum(baseline) / len(baseline) if baseline else 0
     if avg == 0:
-        return {'detected': False, 'ratio': 0.0}
+        return {'detected': False, 'ratio': 0.0, 'current_vol': current, 'avg_vol': 0}
     ratio = current / avg
-    return {'detected': ratio >= multiplier, 'ratio': round(ratio, 2)}
+    return {'detected': ratio >= multiplier, 'ratio': round(ratio, 2),
+            'current_vol': current, 'avg_vol': int(round(avg))}
 
 
 def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
@@ -141,8 +143,13 @@ def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
     bodies  = [bar.high - bar.low for bar in bars]
     volumes = [int(getattr(bar, 'volume', 0) or 0) for bar in bars]
 
-    last_price_ts = None
-    last_vol_ts   = None
+    last_price_ts    = None
+    last_vol_ts      = None
+    last_price_range = None
+    last_price_avg   = None
+    last_price_close = None
+    last_vol_amount  = None
+    last_vol_avg     = None
 
     for i in range(len(bars) - 1, 0, -1):
         bar_date = getattr(bars[i], 'date', None)
@@ -163,15 +170,28 @@ def last_spike_times(bars, multiplier_price=2.0, multiplier_vol=2.5, period=20):
         avg_v = sum(baseline_v) / len(baseline_v) if baseline_v else 0
 
         if last_price_ts is None and avg_b > 0 and bodies[i] / avg_b >= multiplier_price:
-            last_price_ts = ts
+            last_price_ts    = ts
+            last_price_range = round(bodies[i], 4)
+            last_price_avg   = round(avg_b, 4)
+            last_price_close = round(bars[i].close, 4)
 
         if last_vol_ts is None and avg_v > 0 and volumes[i] / avg_v >= multiplier_vol:
-            last_vol_ts = ts
+            last_vol_ts     = ts
+            last_vol_amount = volumes[i]
+            last_vol_avg    = int(round(avg_v))
 
         if last_price_ts is not None and last_vol_ts is not None:
             break
 
-    return {'last_price_ts': last_price_ts, 'last_vol_ts': last_vol_ts}
+    return {
+        'last_price_ts':    last_price_ts,
+        'last_vol_ts':      last_vol_ts,
+        'last_price_range': last_price_range,
+        'last_price_avg':   last_price_avg,
+        'last_price_close': last_price_close,
+        'last_vol_amount':  last_vol_amount,
+        'last_vol_avg':     last_vol_avg,
+    }
 
 
 def calc_volume_metrics(bars, period=20):

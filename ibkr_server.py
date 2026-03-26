@@ -29,7 +29,7 @@ ANALYTICS_INTERVAL            = 3
 ALL_POSITIONS_REFRESH_INTERVAL = 30
 
 background_threads_started = False
-server_config = {'analytics_interval': ANALYTICS_INTERVAL}
+server_config = {'analytics_interval': ANALYTICS_INTERVAL, 'paused': False}
 
 
 # ── HTTP SERVER ──────────────────────────────────────────────────
@@ -94,11 +94,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if path == '/status':
             with client.state_lock:
                 payload = {
-                    'connected':       client.state['connected'],
-                    'last_update':     client.state['last_update'],
-                    'count':           len(client.state['positions']),
-                    'data_mode':       client.state.get('data_mode', client.market_data_label),
-                    'selected_symbol': client.state.get('selected_symbol', 'ALL'),
+                    'connected':          client.state['connected'],
+                    'last_update':        client.state['last_update'],
+                    'count':              len(client.state['positions']),
+                    'data_mode':          client.state.get('data_mode', client.market_data_label),
+                    'selected_symbol':    client.state.get('selected_symbol', 'ALL'),
+                    'requests_last_10s':  client.requests_last_10s(),
+                    'pacing_violations':  client.pacing_violations,
+                    'last_violation':     client.last_violation,
                 }
             self.send_json(payload)
             return
@@ -130,9 +133,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.send_json(position)
             return
 
+        if path == '/pause':
+            server_config['paused'] = not server_config['paused']
+            state = 'paused' if server_config['paused'] else 'running'
+            print(f'[SERVER] {state}')
+            self.send_json({'ok': True, 'paused': server_config['paused']})
+            return
+
         if path == '/config':
             self.send_json({'analytics_interval': server_config['analytics_interval'],
-                            'bar_size': client.BAR_SIZE})
+                            'bar_size': client.BAR_SIZE, 'paused': server_config['paused']})
             return
 
         if path.startswith('/config/analytics/'):
@@ -165,6 +175,8 @@ def analytics_loop():
 
     while True:
         time.sleep(server_config['analytics_interval'])
+        if server_config['paused']:
+            continue
         try:
             with client.state_lock:
                 selected_symbol = client.state.get('selected_symbol', 'ALL')
@@ -198,6 +210,8 @@ def analytics_loop():
 def refresh_all_positions_loop():
     while True:
         time.sleep(ALL_POSITIONS_REFRESH_INTERVAL)
+        if server_config['paused']:
+            continue
         try:
             with client.state_lock:
                 selected_symbol      = client.state.get('selected_symbol', 'ALL')

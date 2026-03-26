@@ -60,6 +60,32 @@ subscriptions = {}
 bars_cache       = {}  # { (sym, tf): [bars] } — barras cacheadas por símbolo+TF
 tf_last_computed = {}  # { (sym, tf): timestamp } — última vez que se hizo fetch+analytics
 
+# ── PACING ────────────────────────────────────────────────────────
+pacing_violations = 0
+last_violation    = None          # timestamp Unix
+recent_requests   = deque()       # timestamps de solicitudes históricas recientes
+
+
+def _track_request():
+    """Registra una solicitud histórica para el contador de pacing."""
+    recent_requests.append(time.time())
+
+
+def requests_last_10s():
+    """Retorna cuántas solicitudes históricas se hicieron en los últimos 10s."""
+    cutoff = time.time() - 10
+    while recent_requests and recent_requests[0] < cutoff:
+        recent_requests.popleft()
+    return len(recent_requests)
+
+
+def _on_ib_error(reqId, errorCode, errorString, contract):
+    global pacing_violations, last_violation
+    if errorCode in (162, 420, 10090):
+        pacing_violations += 1
+        last_violation = time.time()
+        print(f'[PACING] violation {errorCode}: {errorString}')
+
 
 # ── HELPERS NUMÉRICOS ────────────────────────────────────────────
 
@@ -321,6 +347,7 @@ def connect_ibkr():
         state['connected'] = ib.isConnected()
         state['data_mode'] = market_data_label
 
+    ib.errorEvent += _on_ib_error
     print(f'[IBKR] Conectado | Modo de datos: {market_data_label}')
 
 
@@ -459,6 +486,7 @@ def on_pending_tickers(tickers):
 # ── DATOS HISTÓRICOS ─────────────────────────────────────────────
 
 async def request_historical_bars(contract):
+    _track_request()
     return await ib.reqHistoricalDataAsync(
         contract,
         endDateTime='',
@@ -471,6 +499,7 @@ async def request_historical_bars(contract):
 
 
 async def request_historical_bars_for_tf(contract, duration, bar_size):
+    _track_request()
     return await ib.reqHistoricalDataAsync(
         contract,
         endDateTime='',
