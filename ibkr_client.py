@@ -10,8 +10,9 @@ import time
 from collections import defaultdict, deque
 from concurrent.futures import Future
 from copy import deepcopy
+from datetime import datetime
 
-from ib_insync import IB, Ticker, util
+from ib_insync import IB, LimitOrder, Ticker, util
 
 import indicators as ind
 
@@ -28,6 +29,14 @@ MULTI_TF_CONFIG     = {
     '1h':  {'duration': '10 D',  'bar_size': '1 hour'},
     '4h':  {'duration': '90 D',  'bar_size': '4 hours'},
     '1D':  {'duration': '1 Y',   'bar_size': '1 day'},
+}
+TF_REFRESH_INTERVAL = {   # segundos mínimos entre fetches por TF
+    '1m':  60,
+    '5m':  60,
+    '15m': 60,
+    '1h':  900,   # 15 min
+    '4h':  3600,  # 60 min
+    '1D':  3600,
 }
 LOOP_TIMEOUT = 20
 
@@ -48,6 +57,8 @@ state = {
 
 price_history = defaultdict(lambda: deque(maxlen=200))
 subscriptions = {}
+bars_cache       = {}  # { (sym, tf): [bars] } — barras cacheadas por símbolo+TF
+tf_last_computed = {}  # { (sym, tf): timestamp } — última vez que se hizo fetch+analytics
 
 
 # ── HELPERS NUMÉRICOS ────────────────────────────────────────────
@@ -544,20 +555,139 @@ def refresh_position_snapshot(sym, contract):
         state['last_update']     = time.time()
 
 
-async def _fetch_all_tf_bars(contract):
-    tasks = [
-        request_historical_bars_for_tf(contract, cfg['duration'], cfg['bar_size'])
-        for cfg in MULTI_TF_CONFIG.values()
-    ]
-    return await asyncio.gather(*tasks, return_exceptions=True)
+def _max_bars_for_config(duration_str, bar_size_str):
+    """Calcula el número máximo de barras a conservar en caché para un TF."""
+    parts = duration_str.split()
+    n, unit = int(parts[0]), parts[1].upper()
+    trading_days = n * 252 if unit == 'Y' else n
+
+    bs_parts = bar_size_str.split()
+    bs_n, bs_unit = int(bs_parts[0]), bs_parts[1].lower()
+    if 'min' in bs_unit:
+        bar_minutes = bs_n
+    elif 'hour' in bs_unit:
+        bar_minutes = bs_n * 60
+    else:  # day
+        bar_minutes = 390
+
+    bars_per_day = max(1, 390 // bar_minutes)
+    return int(trading_days * bars_per_day * 1.5)  # 50% buffer
+
+
+def _merge_bars(cached, new_bars, max_bars):
+    """Combina barras cacheadas con nuevas, deduplicando por fecha. Los nuevos ganan."""
+    if not new_bars:
+        return list(cached)
+    if not cached:
+        result = list(new_bars)
+        return result[-max_bars:] if max_bars and len(result) > max_bars else result
+
+    bar_dict = {str(b.date): b for b in cached}
+    for b in new_bars:
+        bar_dict[str(b.date)] = b
+
+    merged = sorted(bar_dict.values(), key=lambda b: str(b.date))
+    if max_bars and len(merged) > max_bars:
+        merged = merged[-max_bars:]
+    return merged
+
+
+def _delta_duration(last_bar_date):
+    """
+    Calcula la duración a pedir desde la última barra hasta ahora.
+    Retorna string IBKR ('N S' o 'N D'), o None si no hay nada nuevo.
+    """
+    date_str = str(last_bar_date).strip()
+    try:
+        if ' ' in date_str:
+            dt = datetime.strptime(date_str.replace('  ', ' '), '%Y%m%d %H:%M:%S')
+        else:
+            dt = datetime.strptime(date_str, '%Y%m%d')
+    except ValueError:
+        return None
+
+    delta = (datetime.now() - dt).total_seconds()
+    if delta < 60:
+        return None  # sin barras nuevas
+
+    with_margin = delta * 1.2
+    if with_margin <= 86400:
+        return f'{int(with_margin)} S'
+    return f'{math.ceil(with_margin / 86400)} D'
+
+
+async def _fetch_all_tf_bars(contract, sym):
+    now              = time.time()
+    tasks            = []   # coroutine, None (cache/delta hit), or 'skip' (within interval)
+    within_interval  = set()
+
+    for tf_name, cfg in MULTI_TF_CONFIG.items():
+        interval = TF_REFRESH_INTERVAL.get(tf_name, 60)
+        if now - tf_last_computed.get((sym, tf_name), 0) < interval:
+            within_interval.add(tf_name)
+            tasks.append(None)
+            continue
+
+        cached = bars_cache.get((sym, tf_name))
+        if cached:
+            duration = _delta_duration(cached[-1].date)
+            if duration is None:
+                tasks.append(None)
+            else:
+                print(f'[MTF] {sym} {tf_name} delta {duration}')
+                tasks.append(request_historical_bars_for_tf(contract, duration, cfg['bar_size']))
+        else:
+            print(f'[MTF] {sym} {tf_name} fetch completo')
+            tasks.append(request_historical_bars_for_tf(contract, cfg['duration'], cfg['bar_size']))
+
+    real_coros   = [t for t in tasks if t is not None]
+    real_results = await asyncio.gather(*real_coros, return_exceptions=True) if real_coros else []
+
+    results  = []
+    real_idx = 0
+    for tf_name, cfg in MULTI_TF_CONFIG.items():
+        if tf_name in within_interval:
+            results.append(None)  # señal: dentro del intervalo, skip analytics
+            continue
+
+        task = tasks[len(results)]
+        if task is None:
+            # delta=0, sin barras nuevas; procesar caché
+            tf_last_computed[(sym, tf_name)] = now
+            results.append(list(bars_cache.get((sym, tf_name), [])))
+        else:
+            result = real_results[real_idx]
+            real_idx += 1
+            tf_last_computed[(sym, tf_name)] = now
+            if isinstance(result, Exception):
+                cached = bars_cache.get((sym, tf_name))
+                if cached:
+                    print(f'[MTF] {sym} {tf_name} error pacing, usando caché: {result}')
+                    results.append(list(cached))
+                else:
+                    results.append(result)
+            else:
+                cached   = bars_cache.get((sym, tf_name), [])
+                max_bars = _max_bars_for_config(cfg['duration'], cfg['bar_size'])
+                merged   = _merge_bars(cached, result, max_bars)
+                bars_cache[(sym, tf_name)] = merged
+                results.append(list(merged))
+
+    return results
 
 
 def refresh_multi_tf_analysis(sym, contract):
     tf_names = list(MULTI_TF_CONFIG.keys())
-    results  = run_ib_coro(_fetch_all_tf_bars(contract))
-    multi_tf = {}
+    results  = run_ib_coro(_fetch_all_tf_bars(contract, sym))
+
+    # Preservar datos existentes de TFs dentro de su intervalo
+    with state_lock:
+        pos      = state['positions'].get(sym)
+        multi_tf = deepcopy(pos.get('multi_tf', {})) if pos else {}
 
     for tf_name, result in zip(tf_names, results):
+        if result is None:
+            continue  # dentro del intervalo, conservar datos anteriores
         if isinstance(result, Exception):
             print(f'[MTF] {sym} {tf_name} error: {result}')
             continue
@@ -580,6 +710,7 @@ def refresh_multi_tf_analysis(sym, contract):
             'volume_ratio':  volume['volume_ratio'],
             'volume_signal': volume['volume_signal'],
             'close':         rounded(closes[-1]),
+            'last_updated':  tf_last_computed.get((sym, tf_name), time.time()),
         }
 
     if not multi_tf:
@@ -587,15 +718,22 @@ def refresh_multi_tf_analysis(sym, contract):
 
     style = ind.choose_trade_style(multi_tf)
 
-    # Spike detection usa siempre las barras de 15m
-    tf_15m_idx = list(MULTI_TF_CONFIG.keys()).index('15m')
-    bars_15m   = results[tf_15m_idx] if not isinstance(results[tf_15m_idx], Exception) else []
-    spike_times = ind.last_spike_times(bars_15m) if bars_15m else {'last_price_ts': None, 'last_vol_ts': None}
+    # Spike detection siempre desde el caché de 15m (independiente del intervalo)
+    bars_15m = bars_cache.get((sym, '15m'), [])
+    _empty_times = {'last_price_ts': None, 'last_vol_ts': None,
+                    'last_price_range': None, 'last_price_avg': None, 'last_price_close': None,
+                    'last_vol_amount': None, 'last_vol_avg': None}
+    spike_times = ind.last_spike_times(bars_15m) if bars_15m else _empty_times
     spike = {
-        'price':        ind.detect_price_spike(bars_15m)  if bars_15m else {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL'},
-        'volume':       ind.detect_volume_spike(bars_15m) if bars_15m else {'detected': False, 'ratio': 0.0},
-        'last_price_ts': spike_times['last_price_ts'],
-        'last_vol_ts':   spike_times['last_vol_ts'],
+        'price':           ind.detect_price_spike(bars_15m)  if bars_15m else {'detected': False, 'ratio': 0.0, 'direction': 'NEUTRAL', 'current_range': 0.0, 'avg_range': 0.0},
+        'volume':          ind.detect_volume_spike(bars_15m) if bars_15m else {'detected': False, 'ratio': 0.0, 'current_vol': 0, 'avg_vol': 0},
+        'last_price_ts':    spike_times['last_price_ts'],
+        'last_vol_ts':      spike_times['last_vol_ts'],
+        'last_price_range': spike_times['last_price_range'],
+        'last_price_avg':   spike_times['last_price_avg'],
+        'last_price_close': spike_times['last_price_close'],
+        'last_vol_amount':  spike_times['last_vol_amount'],
+        'last_vol_avg':     spike_times['last_vol_avg'],
     }
 
     with state_lock:
@@ -629,3 +767,43 @@ def refresh_all_positions_once(symbols=None):
             refresh_position_snapshot(sym, contract)
         except Exception as exc:
             print(f'[ALL] {sym} refresh error: {exc}')
+
+
+# ── ÓRDENES ──────────────────────────────────────────────────────
+
+async def _place_order_async(contract, order):
+    trade = ib.placeOrder(contract, order)
+    await asyncio.sleep(2.0)   # dar tiempo a TWS para procesar y responder
+    return trade
+
+
+def place_order(sym, action, qty, limit_price):
+    """Coloca una limit order DAY. action='BUY'|'SELL'."""
+    with state_lock:
+        sub = subscriptions.get(sym)
+
+    if not sub:
+        raise ValueError(f'{sym} no tiene suscripción activa')
+
+    contract    = sub['contract']
+    limit_price = round(float(limit_price), 2)
+    order       = LimitOrder(action, int(qty), limit_price)
+    order.tif   = 'DAY'   # evita error 10349 por preset de TWS
+
+    trade  = run_ib_coro(_place_order_async(contract, order))
+    status = trade.orderStatus.status
+    print(f'[ORDER] {action} {qty} {sym} @ {limit_price} → orderId={trade.order.orderId} status={status}')
+
+    if status in ('Cancelled', 'Inactive'):
+        err_msgs = [e.message for e in trade.log if e.message and e.errorCode > 0]
+        raise ValueError(err_msgs[-1] if err_msgs else f'Orden cancelada por TWS (status: {status})')
+
+    return {
+        'ok':          True,
+        'order_id':    trade.order.orderId,
+        'status':      status,
+        'sym':         sym,
+        'action':      action,
+        'qty':         int(qty),
+        'limit_price': limit_price,
+    }

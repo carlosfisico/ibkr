@@ -93,6 +93,67 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 .sig-filter-btn.active-sell   { border-color:var(--red-brd);    background:var(--red-bg);    color:var(--red); }
 .sig-filter-btn.active-watch  { border-color:var(--yellow-brd); background:var(--yellow-bg); color:var(--yellow); }
 
+/* ORDER BUTTONS + MODAL */
+.order-btn {
+  padding:7px 16px; border-radius:8px; font-size:12px; font-weight:800;
+  cursor:pointer; border:1px solid; transition:all .15s; white-space:nowrap;
+  letter-spacing:.04em;
+}
+.order-btn-buy  { border-color:var(--green-brd); background:var(--green-bg); color:var(--green); }
+.order-btn-sell { border-color:var(--red-brd);   background:var(--red-bg);   color:var(--red); }
+.order-btn:hover { filter:brightness(1.3); }
+.order-btn:disabled { opacity:.4; cursor:not-allowed; }
+.order-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:1000;
+  display:none; align-items:center; justify-content:center;
+}
+.order-modal {
+  background:var(--card); border:1px solid var(--brd); border-radius:14px;
+  padding:24px 28px; width:320px; display:flex; flex-direction:column; gap:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.order-modal-head {
+  display:flex; align-items:center; gap:10px;
+}
+.order-modal-action {
+  font-size:13px; font-weight:900; letter-spacing:.07em;
+  padding:4px 10px; border-radius:6px; border:1px solid;
+}
+.order-modal-action.buy  { color:var(--green); background:var(--green-bg); border-color:var(--green-brd); }
+.order-modal-action.sell { color:var(--red);   background:var(--red-bg);   border-color:var(--red-brd); }
+.order-modal-sym { font-size:20px; font-weight:800; color:var(--txt); }
+.order-modal-ref { font-size:12px; color:var(--dim); }
+.order-modal-field { display:flex; flex-direction:column; gap:5px; }
+.order-modal-field label { font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+.order-modal-field input {
+  background:var(--card2); border:1px solid var(--brd); border-radius:8px;
+  color:var(--txt); font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600;
+  padding:9px 12px; outline:none; transition:border-color .2s; width:100%; box-sizing:border-box;
+}
+.order-modal-field input:focus { border-color:var(--acc-brd); }
+.order-modal-footer { display:flex; gap:10px; }
+.order-modal-cancel {
+  flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; border:1px solid var(--brd); background:transparent; color:var(--dim);
+  transition:all .15s;
+}
+.order-modal-cancel:hover { border-color:var(--txt); color:var(--txt); }
+.order-modal-confirm {
+  flex:2; padding:10px; border-radius:8px; font-size:13px; font-weight:800;
+  cursor:pointer; border:1px solid; transition:all .15s; letter-spacing:.04em;
+}
+.order-modal-confirm.buy  { border-color:var(--green-brd); background:var(--green-bg); color:var(--green); }
+.order-modal-confirm.sell { border-color:var(--red-brd);   background:var(--red-bg);   color:var(--red); }
+.order-modal-confirm:hover { filter:brightness(1.3); }
+.order-modal-confirm:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+.order-toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  padding:10px 20px; border-radius:10px; font-size:13px; font-weight:700;
+  border:1px solid; z-index:2000; opacity:0; transition:opacity .3s; pointer-events:none;
+}
+.order-toast.ok   { background:var(--green-bg); border-color:var(--green-brd); color:var(--green); }
+.order-toast.err  { background:var(--red-bg);   border-color:var(--red-brd);   color:var(--red); }
+
 /* ALERTS PANEL */
 .alerts-panel {
   margin:12px 20px 0;
@@ -471,7 +532,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 .tl-bar.green  .tl-lbl { color:var(--green); }
 .tl-bar.yellow .tl-lbl { color:var(--yellow); }
 .tl-bar.red    .tl-lbl { color:var(--red); }
-.tl-txt { font-size:11px; color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tl-txt { font-size:13px; color:var(--txt); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tl-panel { padding:10px 12px; border-radius:10px; border:1px solid; }
 .tl-panel.green  { background:var(--green-bg);  border-color:var(--green-brd); }
 .tl-panel.yellow { background:var(--yellow-bg); border-color:var(--yellow-brd); }
@@ -503,6 +564,24 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt);
 .eye-btn.active  { background:rgba(239,68,68,.1); border-color:var(--red-brd); color:var(--red); }
 .sensitive       { transition: filter .2s; }
 body.privacy-mode .sensitive { visibility:hidden; }
+.info-icon {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:15px; height:15px; border-radius:50%;
+  font-size:10px; font-weight:800; color:var(--dim);
+  border:1px solid var(--dim); cursor:default; flex-shrink:0;
+  position:relative;
+}
+.info-icon:hover { color:var(--txt); border-color:var(--txt); }
+.info-icon .info-tip {
+  display:none; position:absolute; bottom:calc(100% + 6px); left:50%;
+  transform:translateX(-50%); background:var(--surface);
+  border:1px solid var(--brd); border-radius:8px;
+  padding:8px 12px; min-width:220px; z-index:100;
+  font-size:12px; font-weight:400; color:var(--txt);
+  line-height:1.6; white-space:normal; pointer-events:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+}
+.info-icon:hover .info-tip { display:block; }
 </style>
 </head>
 <body>
@@ -563,6 +642,7 @@ body.privacy-mode .sensitive { visibility:hidden; }
   <div class="sum-item"><div class="sum-lbl">Señales BUY</div><div class="sum-val" id="sumBuy" style="color:var(--green)">--</div></div>
   <div class="sum-item"><div class="sum-lbl">Señales SELL</div><div class="sum-val" id="sumSell" style="color:var(--red)">--</div></div>
   <div class="sum-item"><div class="sum-lbl">Última actualización</div><div class="sum-val" id="sumUpdate" style="color:var(--dim);font-size:12px">--</div></div>
+  <div id="sumPosition" style="margin-left:auto;display:none;align-items:center;gap:20px;border-left:1px solid var(--brd);padding-left:20px;"></div>
 </div>
 
 <!-- FILTER BAR -->
@@ -576,7 +656,35 @@ body.privacy-mode .sensitive { visibility:hidden; }
   <button class="sig-filter-btn" id="fBuy"   onclick="setSigFilter('BUY')">🟢 BUY</button>
   <button class="sig-filter-btn" id="fSell"  onclick="setSigFilter('SELL')">🔴 SELL</button>
   <button class="sig-filter-btn" id="fWatch" onclick="setSigFilter('WATCH')">🟡 Watch</button>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <button class="order-btn order-btn-buy"  id="orderBuyBtn"  onclick="openOrderModal('BUY')"  disabled>▲ COMPRAR</button>
+    <button class="order-btn order-btn-sell" id="orderSellBtn" onclick="openOrderModal('SELL')" disabled>▼ VENDER</button>
+  </div>
 </div>
+
+<!-- ORDER MODAL -->
+<div class="order-modal-overlay" id="orderModal" onclick="if(event.target===this)closeOrderModal()">
+  <div class="order-modal">
+    <div class="order-modal-head">
+      <span class="order-modal-action buy" id="orderActionBadge">BUY</span>
+      <span class="order-modal-sym" id="orderSymLabel">—</span>
+    </div>
+    <div class="order-modal-ref">Precio actual: <strong id="orderRefPrice">—</strong></div>
+    <div class="order-modal-field">
+      <label>Cantidad (acciones)</label>
+      <input type="number" id="orderQty" value="1" min="1" step="1">
+    </div>
+    <div class="order-modal-field">
+      <label>Precio límite (USD)</label>
+      <input type="number" id="orderLimitPrice" min="0.01" step="0.01">
+    </div>
+    <div class="order-modal-footer">
+      <button class="order-modal-cancel" onclick="closeOrderModal()">Cancelar</button>
+      <button class="order-modal-confirm buy" id="orderConfirmBtn" onclick="submitOrder()">Confirmar COMPRA</button>
+    </div>
+  </div>
+</div>
+<div class="order-toast" id="orderToast"></div>
 
 <!-- PANEL DE ALERTAS -->
 <div class="alerts-panel" id="alertsPanel" style="display:none">
@@ -587,7 +695,7 @@ body.privacy-mode .sensitive { visibility:hidden; }
     </div>
     <span id="alertsChevron" style="font-size:11px;color:var(--dim);">▾</span>
   </div>
-  <div class="alerts-body" id="alertsBody"></div>
+  <div class="alerts-body" id="alertsBody" style="display:none"></div>
 </div>
 
 <!-- CONTENT -->
@@ -629,7 +737,7 @@ let refreshMs   = 5000;
 let allPositions  = [];
 let currentTicker = '';
 let currentSig    = 'ALL';
-let alertsOpen    = true;
+let alertsOpen    = false;
 let errorCount    = 0;
 let refreshTimer  = null;
 let progressTimer = null;
@@ -928,6 +1036,18 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function formatAge(ts) {
+  if (!ts) return '—';
+  const secs = Math.floor(Date.now() / 1000 - ts);
+  if (secs < 5)   return 'ahora';
+  if (secs < 60)  return `hace ${secs}s`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60)  return `hace ${mins}min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `hace ${h}h ${m}min` : `hace ${h}h`;
+}
+
 // CLOCK
 function tick() {
   const n = new Date();
@@ -955,6 +1075,7 @@ async function fetchPositions() {
     }
     updateSummary(data);
     updateTickerSelect();
+    updateOrderButtons();
     if (currentTicker && data.selected_symbol !== currentTicker) {
       await setStreamingSymbol(currentTicker);
     }
@@ -1101,6 +1222,7 @@ async function setStreamingSymbol(symbol) {
 
 async function onTickerChange() {
   currentTicker = document.getElementById('tickerSelect').value;
+  updateOrderButtons();
   await setStreamingSymbol(currentTicker);
   restartAutoRefresh();
   await fetchPositions();
@@ -1259,7 +1381,6 @@ async function jumpToTicker(sym) {
   restartAutoRefresh();
   await fetchPositions();
   applyFilters();
-  window.scrollTo({top: document.getElementById('grid').offsetTop - 10, behavior:'smooth'});
 }
 
 // RENDER GRID
@@ -1333,16 +1454,6 @@ function renderCard(p) {
   const tlArrow = tl.direction === 'long' ? ' ↑' : tl.direction === 'short' ? ' ↓' : '';
   return `
   <div class="card ${cardCls}" id="card-${esc(p.symbol)}">
-    <div class="card-head">
-      <div>
-        <div class="card-sym">${esc(p.symbol)}</div>
-        <div class="sensitive" style="font-size:10px;color:var(--dim);margin-top:2px;">${p.qty} acciones · costo $${p.avg_cost.toFixed(2)}</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="card-price" style="color:${priceColor}">$${p.price.toFixed(2)}</div>
-        <div style="font-size:10px;color:var(--dim);margin-top:2px;">Bid ${p.bid.toFixed(2)} / Ask ${p.ask.toFixed(2)}</div>
-      </div>
-    </div>
     <div class="card-body">
       <div class="tl-bar ${tl.state}"><div class="tl-dot"></div><span class="tl-lbl">${tl.label}${tlArrow}</span><span class="tl-txt">${esc(tl.operativeText)}</span></div>
       <div class="dec-banner ${d.cls}"><span>${d.icon} ${d.txt}</span><span style="font-size:11px;opacity:.75;">${dec}</span></div>
@@ -1375,9 +1486,18 @@ function renderCard(p) {
         const pCls = pr.detected?'sig-on':'sig-off';
         const vCls = vo.detected?'sig-on':'sig-off';
         const timerTxt = lastSpikeTime[p.symbol] ? 'hace ' + formatElapsed(Date.now() - lastSpikeTime[p.symbol]) : '--';
+        const lpr  = sp.last_price_range != null ? Number(sp.last_price_range) : null;
+        const lpa  = sp.last_price_avg   != null ? Number(sp.last_price_avg)   : null;
+        const lpc  = sp.last_price_close != null ? Number(sp.last_price_close) : null;
+        const lpct = (lpr != null && lpc != null && lpc > 0) ? (lpr / lpc * 100).toFixed(2) + '%' : '--';
+        const lva  = sp.last_vol_amount  != null ? Number(sp.last_vol_amount)  : null;
+        const lvg  = sp.last_vol_avg     != null ? Number(sp.last_vol_avg)     : null;
+        const tipPrecio = `Último spike: $${lpr != null ? lpr.toFixed(4) : '--'} (${lpct} del precio)\nPrecio al cierre: $${lpc != null ? lpc.toFixed(2) : '--'}\nPromedio ref. (20 velas): $${lpa != null ? lpa.toFixed(4) : '--'}`;
+        const tipVol    = `Último spike: ${lva != null ? lva.toLocaleString() : '--'}\nPromedio ref. (20 velas): ${lvg != null ? lvg.toLocaleString() : '--'}`;
         return `<div style="display:flex;flex-direction:column;gap:4px;">
           <div style="display:flex;gap:6px;align-items:center;">
             <span style="font-size:13px;font-weight:800;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Spike 15m</span>
+            <span class="info-icon">i<span class="info-tip"><b>Precio</b><br>${tipPrecio.replace(/\n/g,'<br>')}<br><br><b>Volumen</b><br>${tipVol.replace(/\n/g,'<br>')}</span></span>
             <div class="sig-pill ${pCls}">${pr.detected?'✓':'○'} Precio${pr.detected?' ×'+pr.ratio+dirIcon:''}</div>
             <div class="sig-pill ${vCls}">${vo.detected?'✓':'○'} Vol${vo.detected?' ×'+vo.ratio:''}</div>
           </div>
@@ -1522,11 +1642,38 @@ function renderTeleprompt(position) {
 
   if (auxHeader) auxHeader.textContent = `Historial · RSI (${rsiTf}) · MACD · VOL`;
 
+  const sumPos = document.getElementById('sumPosition');
   if (!position) {
     gridA.innerHTML = '<div class="side-empty">Selecciona un ticker para ver RSI, MACD, volumen y la señal resumida.</div>';
     gridB.innerHTML = '<div class="side-empty">Sin lectura multi-timeframe todavía.</div>';
     auxRow.innerHTML = '<div class="aux-line"><span class="aux-pill" style="color:var(--dim)">--:--:--</span><span class="aux-pill" style="color:var(--dim)">RSI --</span><span class="aux-pill" style="color:var(--dim)">MACD --</span><span class="aux-pill" style="color:var(--dim)">VOL --</span></div>';
+    if (sumPos) { sumPos.style.display = 'none'; sumPos.innerHTML = ''; }
     return;
+  }
+  if (sumPos) {
+    const pnl  = Number(position.pnl_total || 0);
+    const pct  = Number(position.pnl_pct   || 0);
+    const pnlC = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = pnl >= 0 ? '+' : '';
+    const prC  = Number(position.price||0) >= Number(position.avg_cost||0) ? 'var(--green)' : 'var(--red)';
+    sumPos.style.display = 'flex';
+    sumPos.innerHTML = `
+      <div class="sum-item">
+        <div class="sum-lbl">Ticker</div>
+        <div class="sum-val" style="color:var(--acc)">${esc(position.symbol)}</div>
+      </div>
+      <div class="sum-item sensitive">
+        <div class="sum-lbl">Acciones · Costo</div>
+        <div class="sum-val" style="color:var(--txt)">${Number(position.qty||0)} · $${Number(position.avg_cost||0).toFixed(2)}</div>
+      </div>
+      <div class="sum-item sensitive">
+        <div class="sum-lbl">P&L no realizado</div>
+        <div class="sum-val" style="color:${pnlC}">${sign}$${pnl.toFixed(2)} (${sign}${pct.toFixed(2)}%)</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">Precio · Bid · Ask</div>
+        <div class="sum-val" style="color:${prC}">$${Number(position.price||0).toFixed(2)} <span style="color:var(--dim);font-size:13px;">· ${Number(position.bid||0).toFixed(2)} / ${Number(position.ask||0).toFixed(2)}</span></div>
+      </div>`;
   }
 
   const rsiModel = getRsiModel(position);
@@ -1565,7 +1712,25 @@ function renderTeleprompt(position) {
     ? ['var(--red)', 'Velas 5m confirman venta', `${candleModel.red_consecutive} velas rojas consecutivas en 5m.`]
     : ['var(--dim)', 'Velas 5m sin confirmación', 'Todavía no hay secuencia clara de velas en 5m.'];
 
-  const rows = [rsiTone, macdTone, candleTone, volTone, decisionTone];
+  const sp15 = position.spike || {};
+  const sp15p = sp15.price  || {};
+  const sp15v = sp15.volume || {};
+  const sp15BestMs = (() => {
+    const pm = sp15.last_price_ts ? sp15.last_price_ts * 1000 : null;
+    const vm = sp15.last_vol_ts   ? sp15.last_vol_ts   * 1000 : null;
+    return (pm && vm) ? Math.max(pm, vm) : (pm || vm || null);
+  })();
+  const sp15Timer = sp15BestMs ? ` · hace ${formatElapsed(Date.now() - sp15BestMs)}` : '';
+  const sp15Dir   = sp15p.direction === 'UP' ? ' ↑' : sp15p.direction === 'DOWN' ? ' ↓' : '';
+  const spikeTone = (sp15p.detected && sp15v.detected)
+    ? ['var(--green)',  'Spike 15m: precio y volumen', `Rango ×${sp15p.ratio}${sp15Dir} · Vol ×${sp15v.ratio}${sp15Timer}`]
+    : sp15p.detected
+    ? ['var(--yellow)', 'Spike 15m: solo precio',      `Rango ×${sp15p.ratio}${sp15Dir} sin confirmación de volumen${sp15Timer}`]
+    : sp15v.detected
+    ? ['var(--yellow)', 'Spike 15m: solo volumen',     `Vol ×${sp15v.ratio} sin spike en precio${sp15Timer}`]
+    : ['var(--dim)',    'Sin spike 15m',                `Rango y volumen dentro de lo normal${sp15Timer}`];
+
+  const rows = [rsiTone, macdTone, candleTone, volTone, spikeTone, decisionTone];
   const multiTf = position.multi_tf || {};
   const tfOrder = ['1m', '5m', '15m', '1h', '4h', '1D'];
   const tfPeriod = {'1m':'1 día','5m':'2 días','15m':'5 días','1h':'10 días','4h':'3 meses','1D':'1 año'};
@@ -1585,7 +1750,7 @@ function renderTeleprompt(position) {
           <div class="tf-label">${tf}<div style="font-size:8px;color:var(--dim);font-weight:400;margin-top:2px;">${tfPeriod[tf]||''}</div></div>
           <div>
             <div class="tf-main">${item.summary}</div>
-            <div class="tf-mini">Último cierre: ${Number(item.close||0).toFixed(2)}</div>
+            <div class="tf-mini">Cierre: ${Number(item.close||0).toFixed(2)} · <span style="color:var(--dim);">${formatAge(item.last_updated)}</span></div>
             <div class="tf-values">
               <span>RSI ${Number(item.rsi||0).toFixed(1)}</span>
               <span>MACD ${macdState}</span>
@@ -1656,10 +1821,7 @@ function renderTeleprompt(position) {
   gridA.innerHTML = `
     <div class="side-head">
       <div class="side-kicker">Lectura rápida</div>
-      <div class="side-symbol">${esc(position.symbol || '---')}</div>
       <div class="side-style" style="color:${styleColor};background:${styleBg};border-color:${styleBorder};">${esc(styleLabel)}</div>
-      <div class="side-price">$${price.toFixed(2)}</div>
-      <div class="side-qty sensitive">${Number(position.qty||0)} acciones · costo $${Number(position.avg_cost||0).toFixed(2)}</div>
     </div>
     <div class="side-body">${tlPanelHtml}${teleRowsHTML}</div>
   `;
@@ -1683,7 +1845,6 @@ function renderTeleprompt(position) {
   gridB.innerHTML = `
     <div class="side-head">
       <div class="side-kicker">CONTEXTO</div>
-      <div class="side-symbol">${esc(position.symbol || '---')}</div>
     </div>
     <div class="side-body">
       ${alignHTML}
@@ -1692,6 +1853,88 @@ function renderTeleprompt(position) {
   `;
 }
 
+// ── ÓRDENES ──────────────────────────────────────────────────────
+let orderAction = null;
+let orderToastTimer = null;
+
+function updateOrderButtons() {
+  const active = currentTicker && currentTicker !== 'ALL';
+  document.getElementById('orderBuyBtn').disabled  = !active;
+  document.getElementById('orderSellBtn').disabled = !active;
+}
+
+function openOrderModal(action) {
+  if (!currentTicker || currentTicker === 'ALL') return;
+  orderAction = action;
+
+  const pos = allPositions.find(p => p.symbol === currentTicker);
+  const price = pos ? (pos.price || 0) : 0;
+
+  const badge   = document.getElementById('orderActionBadge');
+  const confirm = document.getElementById('orderConfirmBtn');
+  badge.textContent   = action;
+  badge.className     = 'order-modal-action ' + (action === 'BUY' ? 'buy' : 'sell');
+  confirm.className   = 'order-modal-confirm ' + (action === 'BUY' ? 'buy' : 'sell');
+  confirm.textContent = action === 'BUY' ? 'Confirmar COMPRA' : 'Confirmar VENTA';
+
+  document.getElementById('orderSymLabel').textContent   = currentTicker;
+  document.getElementById('orderRefPrice').textContent   = price > 0 ? '$' + price.toFixed(2) : '—';
+  document.getElementById('orderLimitPrice').value       = price > 0 ? price.toFixed(2) : '';
+  document.getElementById('orderQty').value              = '1';
+
+  document.getElementById('orderModal').style.display = 'flex';
+  document.getElementById('orderQty').focus();
+}
+
+function closeOrderModal() {
+  document.getElementById('orderModal').style.display = 'none';
+  orderAction = null;
+}
+
+async function submitOrder() {
+  const qty         = parseInt(document.getElementById('orderQty').value);
+  const limit_price = parseFloat(document.getElementById('orderLimitPrice').value);
+
+  if (!qty || qty <= 0 || !limit_price || limit_price <= 0) {
+    showOrderToast('Ingresa cantidad y precio válidos', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('orderConfirmBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const res  = await fetch(`${SERVER}/order`, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ sym: currentTicker, action: orderAction, qty, limit_price }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      closeOrderModal();
+      showOrderToast(`${data.action} ${data.qty} ${data.sym} @ $${data.limit_price} — ID ${data.order_id}`, 'ok');
+    } else {
+      showOrderToast(`Error: ${data.error}`, 'err');
+    }
+  } catch (e) {
+    showOrderToast(`Error de conexión: ${e.message}`, 'err');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = orderAction === 'BUY' ? 'Confirmar COMPRA' : 'Confirmar VENTA';
+  }
+}
+
+function showOrderToast(msg, type) {
+  const el = document.getElementById('orderToast');
+  el.textContent = msg;
+  el.className   = 'order-toast ' + type;
+  el.style.opacity = '1';
+  clearTimeout(orderToastTimer);
+  orderToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 4000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
 // INIT
 loadConfig();
 fetchPositions();

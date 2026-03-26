@@ -9,6 +9,7 @@ Uso:
 """
 
 import json
+import os
 import threading
 import time
 from concurrent.futures import TimeoutError as FutureTimeoutError
@@ -22,6 +23,7 @@ import ibkr_client as client
 # ── CONFIG HTTP ──────────────────────────────────────────────────
 HOST                          = '127.0.0.1'
 PORT                          = 8766
+FOCUS_FILE                    = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'focused_symbol.txt')
 SYNC_INTERVAL                 = 3
 ANALYTICS_INTERVAL            = 3
 ALL_POSITIONS_REFRESH_INTERVAL = 30
@@ -34,7 +36,7 @@ server_config = {'analytics_interval': ANALYTICS_INTERVAL}
 
 def cors_headers(handler):
     handler.send_header('Access-Control-Allow-Origin',  '*')
-    handler.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+    handler.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     handler.send_header('Access-Control-Allow-Headers', 'Content-Type')
     handler.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
 
@@ -46,6 +48,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         cors_headers(self)
+        self.end_headers()
+
+    def do_POST(self):
+        path = self.path.split('?')[0]
+
+        if path == '/order':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                data        = json.loads(self.rfile.read(length))
+                sym         = str(data.get('sym', '')).strip().upper()
+                action      = str(data.get('action', '')).strip().upper()
+                qty         = int(data.get('qty', 0))
+                limit_price = float(data.get('limit_price', 0))
+
+                if not sym or action not in ('BUY', 'SELL') or qty <= 0 or limit_price <= 0:
+                    self.send_json({'error': 'parámetros inválidos'}, status=400)
+                    return
+
+                result = client.place_order(sym, action, qty, limit_price)
+                self.send_json(result)
+            except Exception as exc:
+                self.send_json({'error': str(exc)}, status=500)
+            return
+
+        self.send_response(404)
         self.end_headers()
 
     def send_json(self, data, status=200):
@@ -83,6 +110,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if path.startswith('/focus/'):
             symbol   = unquote(path[len('/focus/'):]).strip().upper()
             selected = client.set_selected_symbol(symbol)
+            if selected and selected != 'ALL':
+                with open(FOCUS_FILE, 'w') as f:
+                    f.write(selected)
+            else:
+                try:
+                    os.remove(FOCUS_FILE)
+                except FileNotFoundError:
+                    pass
             self.send_json({'ok': True, 'selected_symbol': selected})
             return
 
@@ -221,6 +256,13 @@ if __name__ == '__main__':
     print(f'  Dashboard: http://localhost:{PORT}')
     print(f'  Datos:     {client.market_data_label}')
     print('=' * 55)
+
+    if os.path.exists(FOCUS_FILE):
+        sym = open(FOCUS_FILE).read().strip().upper()
+        if sym and sym != 'ALL':
+            with client.state_lock:
+                client.state['selected_symbol'] = sym
+            print(f'[FOCUS] símbolo restaurado desde disco: {sym}')
 
     client.connect_ibkr()
     client.ib.pendingTickersEvent += client.on_pending_tickers
